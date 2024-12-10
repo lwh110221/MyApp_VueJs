@@ -55,7 +55,7 @@
               <!-- 下拉菜单 -->
               <div 
                 v-show="showDropdown"
-                class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2"
+                class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50"
               >
                 <router-link 
                   to="/profile" 
@@ -64,9 +64,16 @@
                 >
                   个人中心
                 </router-link>
+                <router-link 
+                  to="/change-password"
+                  class="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  @click="showDropdown = false"
+                >
+                  修改密码
+                </router-link>
                 <button 
                   @click="logout" 
-                  class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
                 >
                   退出登录
                 </button>
@@ -98,7 +105,6 @@ export default {
   created() {
     this.checkAuth()
     window.addEventListener('storage', this.checkAuth)
-    // 添加点击外部关闭下拉菜单
     document.addEventListener('click', this.handleClickOutside)
   },
   mounted() {

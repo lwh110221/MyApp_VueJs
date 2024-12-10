@@ -1,5 +1,14 @@
 <template>
   <div class="bg-white rounded-lg shadow p-4 mb-4">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-semibold">发布动态</h3>
+      <button @click="$emit('close')" class="text-gray-500 hover:text-gray-700">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    
     <textarea
       v-model="content"
       class="w-full p-2 border rounded-lg mb-4 min-h-[100px]"
@@ -64,7 +73,7 @@ import { momentApi } from '../api/moment'
 
 export default {
   name: 'CreateMoment',
-  emits: ['moment-created'],
+  emits: ['moment-created', 'close'],
 
   setup(props, { emit }) {
     const content = ref('')
