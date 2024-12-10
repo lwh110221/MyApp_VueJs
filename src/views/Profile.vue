@@ -99,14 +99,32 @@
         </div>
       </div>
     </div>
+
+    <div class="max-w-4xl mx-auto px-4 py-8">
+      <div class="mb-6">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4">我的动态</h3>
+        <CreateMoment @moment-created="onMomentCreated" />
+        <MomentList 
+          ref="momentList"
+          :userId="profile.id"
+          :currentUserId="profile.id"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import api from '../services/api'
+import CreateMoment from '../components/CreateMoment.vue'
+import MomentList from '../components/MomentList.vue'
 
 export default {
   name: 'Profile',
+  components: {
+    CreateMoment,
+    MomentList
+  },
   data() {
     return {
       profile: {},
@@ -186,6 +204,11 @@ export default {
         this.passwordForm.newPassword = ''
       } catch (error) {
         alert(error.response?.data?.message || '修改密码失败')
+      }
+    },
+    onMomentCreated(newMoment) {
+      if (this.$refs.momentList) {
+        this.$refs.momentList.addNewMoment(newMoment)
       }
     }
   }
