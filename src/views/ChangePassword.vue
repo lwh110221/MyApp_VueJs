@@ -110,7 +110,7 @@ export default {
     refreshCaptcha() {
       // 生成随机参数避免缓存
       const timestamp = new Date().getTime()
-      this.captchaUrl = `${import.meta.env.VITE_API_URL}/api/users/captcha?t=${timestamp}`
+      this.captchaUrl = `${import.meta.env.VITE_API_URL}/api/captcha/generate?t=${timestamp}`
       this.form.captcha = ''
     },
     async handleSubmit() {
