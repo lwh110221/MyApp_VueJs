@@ -109,6 +109,7 @@
         />
 
         <MomentList 
+          v-if="profile.id"
           ref="momentList"
           :userId="profile.id"
           :currentUserId="profile.id"
@@ -148,6 +149,7 @@ export default {
   data() {
     return {
       profile: {},
+      loading: true,
       isEditing: false,
       editedBio: '',
       showSettings: false,
@@ -172,11 +174,14 @@ export default {
     },
     async fetchProfile() {
       try {
+        this.loading = true
         const response = await api.get('/api/users/profile')
         this.profile = response.data
         this.editedBio = this.profile.bio
       } catch (error) {
-        alert(error.response?.data?.message || '获取个人信息失败')
+        console.error('获取个人信息失败:', error)
+      } finally {
+        this.loading = false
       }
     },
     getImageUrl(path) {
