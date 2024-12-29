@@ -5,20 +5,20 @@
         <div class="flex justify-between items-start mb-6">
           <div class="flex items-center space-x-4">
             <div class="relative">
-              <img 
-                :src="getImageUrl(profile.profile_picture)" 
+              <img
+                :src="getImageUrl(profile.profile_picture)"
                 class="w-20 h-20 rounded-full object-cover"
                 alt="用户头像"
               >
-              <button 
-                @click="$refs.fileInput.click()" 
+              <button
+                @click="$refs.fileInput.click()"
                 class="absolute bottom-0 right-0 bg-blue-500 text-white p-1 rounded-full hover:bg-blue-600"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path d="M12 4v16m8-8H4" stroke-width="2" stroke-linecap="round"/>
                 </svg>
               </button>
-              <input 
+              <input
                 ref="fileInput"
                 type="file"
                 accept="image/*"
@@ -35,7 +35,7 @@
           </div>
 
           <div class="relative">
-            <button 
+            <button
               @click="showSettings = !showSettings"
               class="text-gray-600 hover:text-gray-800"
             >
@@ -45,7 +45,7 @@
             </button>
 
             <div v-if="showSettings" class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg py-2 z-10">
-              <button 
+              <button
                 @click="showPasswordModal = true; showSettings = false"
                 class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
               >
@@ -59,29 +59,29 @@
           <h3 class="text-lg font-semibold text-gray-800 mb-2">个人简介</h3>
           <div v-if="!isEditing" class="text-gray-600">
             {{ profile.bio || '暂无简介' }}
-            <button 
-              @click="isEditing = true" 
+            <button
+              @click="isEditing = true"
               class="text-blue-500 ml-2"
             >
               编辑
             </button>
           </div>
           <div v-else class="space-y-2">
-            <textarea 
-              v-model="editedBio" 
+            <textarea
+              v-model="editedBio"
               class="w-full px-3 py-2 border rounded-lg"
               rows="3"
               placeholder="请输入个人简介"
             ></textarea>
             <div class="flex space-x-2">
-              <button 
-                @click="updateBio" 
+              <button
+                @click="updateBio"
                 class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
               >
                 保存
               </button>
-              <button 
-                @click="cancelEdit" 
+              <button
+                @click="cancelEdit"
                 class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
               >
                 取消
@@ -94,7 +94,7 @@
       <div class="mb-6">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-xl font-semibold text-gray-800">我的动态</h3>
-          <button 
+          <button
             @click="showCreateMoment = true"
             class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
           >
@@ -102,13 +102,13 @@
           </button>
         </div>
 
-        <CreateMoment 
+        <CreateMoment
           v-if="showCreateMoment"
           @moment-created="onMomentCreated"
           @close="showCreateMoment = false"
         />
 
-        <MomentList 
+        <MomentList
           v-if="profile.id"
           ref="momentList"
           :userId="profile.id"
@@ -175,7 +175,7 @@ export default {
     async fetchProfile() {
       try {
         this.loading = true
-        const response = await api.get('/api/users/profile')
+        const response = await api.get('/users/profile')
         this.profile = response.data
         this.editedBio = this.profile.bio
       } catch (error) {
@@ -193,30 +193,58 @@ export default {
       const file = event.target.files[0]
       if (!file) return
 
+      // 验证文件类型
+      if (!file.type.startsWith('image/')) {
+        this.$message.error('请上传图片文件')
+        return
+      }
+
+      // 验证文件大小（限制为 5MB）
+      if (file.size > 5 * 1024 * 1024) {
+        this.$message.error('图片大小不能超过 5MB')
+        return
+      }
+
       try {
         const formData = new FormData()
         formData.append('avatar', file)
-        
-        const response = await api.put('/api/users/profile/avatar', formData, {
+
+        this.loading = true
+        const response = await api.put('/users/profile/avatar', formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
         })
-        
+
         this.profile.profile_picture = response.data.avatarUrl
+        this.$emit('avatar-updated', response.data.avatarUrl)
+        this.$message.success('头像更新成功')
       } catch (error) {
-        alert(error.response?.data?.message || '头像更新失败')
+        this.$message.error(error.response?.data?.message || '头像更新失败')
+      } finally {
+        this.loading = false
+        event.target.value = ''
       }
     },
     async updateBio() {
+      if (this.bioLoading) return
+      if (this.bioCharCount > this.maxBioLength) {
+        this.$message.warning(`简介不能超过${this.maxBioLength}字`)
+        return
+      }
+
       try {
-        await api.put('/api/users/profile', {
-          bio: this.editedBio
+        this.bioLoading = true
+        await api.put('/users/profile', {
+          bio: this.editedBio.trim()
         })
-        this.profile.bio = this.editedBio
+        this.profile.bio = this.editedBio.trim()
         this.isEditing = false
+        this.$message.success('个人简介更新成功')
       } catch (error) {
-        alert(error.response?.data?.message || '更新简介失败')
+        this.$message.error(error.response?.data?.message || '更新简介失败')
+      } finally {
+        this.bioLoading = false
       }
     },
     cancelEdit() {
@@ -231,7 +259,7 @@ export default {
     },
     onPasswordChanged() {
       this.showPasswordModal = false
-      alert('密码修改成功')
+      this.$message.success('密码修改成功')
     },
     onMomentCreated(newMoment) {
       if (this.$refs.momentList) {
@@ -241,4 +269,4 @@ export default {
     }
   }
 }
-</script> 
+</script>

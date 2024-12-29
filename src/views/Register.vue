@@ -92,12 +92,12 @@ export default {
     refreshCaptcha() {
       // 生成随机参数避免缓存
       const timestamp = new Date().getTime()
-      this.captchaUrl = `${import.meta.env.VITE_API_URL}/api/captcha/generate?t=${timestamp}`
+      this.captchaUrl = `${import.meta.env.VITE_API_URL}/captcha/generate?t=${timestamp}`
       this.captcha = ''
     },
     async handleRegister() {
       try {
-        await api.post('/api/users/register', {
+        await api.post('/users/register', {
           username: this.username,
           email: this.email,
           password: this.password,

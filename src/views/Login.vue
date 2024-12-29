@@ -4,28 +4,34 @@
       <h2 class="text-2xl font-bold text-gray-800 mb-6">登录</h2>
       <form @submit.prevent="handleLogin" class="space-y-4">
         <div>
-          <label class="block text-gray-700 mb-2">用户名</label>
-          <input 
-            v-model="username" 
-            type="text" 
+          <label class="block text-gray-700 mb-2">邮箱</label>
+          <input
+            v-model="email"
+            type="email"
             class="w-full px-3 py-2 border rounded-lg"
             required
+            :disabled="loading"
+            placeholder="请输入邮箱"
           >
         </div>
         <div>
           <label class="block text-gray-700 mb-2">密码</label>
-          <input 
-            v-model="password" 
-            type="password" 
+          <input
+            v-model="password"
+            type="password"
             class="w-full px-3 py-2 border rounded-lg"
             required
+            :disabled="loading"
+            placeholder="请输入密码"
           >
         </div>
-        <button 
-          type="submit" 
-          class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
+        <p v-if="errorMessage" class="text-red-500 text-sm">{{ errorMessage }}</p>
+        <button
+          type="submit"
+          class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="loading"
         >
-          登录
+          {{ loading ? '登录中...' : '登录' }}
         </button>
       </form>
       <div class="mt-4 text-center">
@@ -44,28 +50,53 @@ export default {
   name: 'Login',
   data() {
     return {
-      username: '',
-      password: ''
+      email: '',
+      password: '',
+      loading: false,
+      errorMessage: ''
     }
   },
   methods: {
     async handleLogin() {
+      if (this.loading) return
+      this.errorMessage = ''
+
+      // 简单的邮箱格式验证
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(this.email)) {
+        this.errorMessage = '请输入有效的邮箱地址'
+        return
+      }
+
       try {
-        const response = await api.post('/api/users/login', {
-          username: this.username,
+        this.loading = true
+        const response = await api.post('/users/login', {
+          email: this.email,
           password: this.password
         })
-        
-        localStorage.setItem('token', response.data.token)
-        localStorage.setItem('username', response.data.username)
-        
-        this.$emit('login-success')
-        
-        this.$router.push('/')
+
+        if (response.data.success) {
+          // 保存认证信息
+          localStorage.setItem('token', response.data.data.token)
+          localStorage.setItem('username', response.data.data.username)
+          localStorage.setItem('email', response.data.data.email)
+
+          // 通知父组件登录成功
+          this.$emit('login-success')
+
+          // 延迟跳转，确保token已经保存
+          setTimeout(() => {
+            this.$router.push('/')
+          }, 100)
+        } else {
+          this.errorMessage = response.data.message || '登录失败'
+        }
       } catch (error) {
-        alert(error.response?.data?.message || '登录失败')
+        this.errorMessage = error.response?.data?.message || '登录失败'
+      } finally {
+        this.loading = false
       }
     }
   }
 }
-</script> 
+</script>

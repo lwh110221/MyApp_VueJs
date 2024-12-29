@@ -6,27 +6,27 @@
         <form @submit.prevent="handleSubmit" class="space-y-4">
           <div>
             <label class="block text-gray-700 mb-2">原密码</label>
-            <input 
-              v-model="form.oldPassword" 
-              type="password" 
+            <input
+              v-model="form.oldPassword"
+              type="password"
               class="w-full px-3 py-2 border rounded-lg"
               required
             >
           </div>
           <div>
             <label class="block text-gray-700 mb-2">新密码</label>
-            <input 
-              v-model="form.newPassword" 
-              type="password" 
+            <input
+              v-model="form.newPassword"
+              type="password"
               class="w-full px-3 py-2 border rounded-lg"
               required
             >
           </div>
           <div>
             <label class="block text-gray-700 mb-2">确认新密码</label>
-            <input 
-              v-model="form.confirmPassword" 
-              type="password" 
+            <input
+              v-model="form.confirmPassword"
+              type="password"
               class="w-full px-3 py-2 border rounded-lg"
               required
             >
@@ -34,24 +34,24 @@
               两次输入的密码不一致
             </p>
           </div>
-          
+
           <!-- 图形验证码 -->
           <div>
             <label class="block text-gray-700 mb-2">验证码</label>
             <div class="flex space-x-2">
-              <input 
-                v-model="form.captcha" 
-                type="text" 
+              <input
+                v-model="form.captcha"
+                type="text"
                 class="flex-1 px-3 py-2 border rounded-lg"
                 required
                 maxlength="4"
               >
-              <div 
+              <div
                 class="w-32 h-10 bg-gray-100 flex items-center justify-center cursor-pointer"
                 @click="refreshCaptcha"
               >
-                <img 
-                  :src="captchaUrl" 
+                <img
+                  :src="captchaUrl"
                   alt="验证码"
                   class="h-full"
                 >
@@ -60,14 +60,14 @@
           </div>
 
           <div class="flex space-x-4">
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
               :disabled="!passwordsMatch"
             >
               确认修改
             </button>
-            <button 
+            <button
               type="button"
               @click="$router.back()"
               class="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
@@ -99,7 +99,7 @@ export default {
   },
   computed: {
     passwordsMatch() {
-      return !this.form.confirmPassword || 
+      return !this.form.confirmPassword ||
         this.form.newPassword === this.form.confirmPassword
     }
   },
@@ -110,7 +110,7 @@ export default {
     refreshCaptcha() {
       // 生成随机参数避免缓存
       const timestamp = new Date().getTime()
-      this.captchaUrl = `${import.meta.env.VITE_API_URL}/api/captcha/generate?t=${timestamp}`
+      this.captchaUrl = `${import.meta.env.VITE_API_URL}/captcha/generate?t=${timestamp}`
       this.form.captcha = ''
     },
     async handleSubmit() {
@@ -119,7 +119,7 @@ export default {
       }
 
       try {
-        await api.put('/api/users/password', {
+        await api.put('/users/password', {
           oldPassword: this.form.oldPassword,
           newPassword: this.form.newPassword,
           captcha: this.form.captcha
@@ -134,4 +134,4 @@ export default {
     }
   }
 }
-</script> 
+</script>

@@ -1,4 +1,4 @@
-import api from './index.js'
+import api from '../services/api'
 
 export const momentApi = {
   // 发布动态
@@ -12,7 +12,7 @@ export const momentApi = {
         formData.append('images', image)
       })
     }
-    return api.post('/api/moments', formData, {
+    return api.post('/moments', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -21,13 +21,13 @@ export const momentApi = {
 
   // 获取用户动态列表
   getMoments(userId, page = 1, limit = 10) {
-    return api.get(`/api/moments/user/${userId || ''}`, {
+    return api.get(`/moments/user/${userId || ''}`, {
       params: { page, limit }
     })
   },
 
   // 删除动态
   deleteMoment(momentId) {
-    return api.delete(`/api/moments/${momentId}`)
+    return api.delete(`/moments/${momentId}`)
   }
-} 
+}
