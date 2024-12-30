@@ -139,7 +139,7 @@ export default {
         this.userAvatar = avatarPath
           ? avatarPath.startsWith('http')
             ? avatarPath
-            : `${import.meta.env.VITE_API_URL}${avatarPath}`
+            : `${import.meta.env.VITE_API_URL.replace('/api', '')}${avatarPath}`
           : '/default-avatar.png'
 
         // 更新用户信息

@@ -187,7 +187,8 @@ export default {
     getImageUrl(path) {
       if (!path) return '/default-avatar.png'
       if (path.startsWith('http')) return path
-      return `${import.meta.env.VITE_API_URL}${path}`
+      const baseUrl = import.meta.env.VITE_API_URL.replace('/api', '')
+      return `${baseUrl}${path}`
     },
     async handleAvatarChange(event) {
       const file = event.target.files[0]
