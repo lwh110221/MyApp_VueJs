@@ -90,7 +90,7 @@
 </template>
 
 <script>
-import api from './services/api'
+import { authService, messageService } from './api'
 
 export default {
   name: 'App',
@@ -100,7 +100,8 @@ export default {
       username: '',
       email: '',
       userAvatar: '',
-      showDropdown: false
+      showDropdown: false,
+      loading: false
     }
   },
   created() {
@@ -110,9 +111,6 @@ export default {
   },
   mounted() {
     this.checkAuth()
-    if (this.isLoggedIn) {
-      this.fetchUserInfo()
-    }
   },
   beforeUnmount() {
     window.removeEventListener('storage', this.checkAuth)
@@ -121,21 +119,27 @@ export default {
   methods: {
     async checkAuth() {
       const token = localStorage.getItem('token')
-      const username = localStorage.getItem('username')
-      const email = localStorage.getItem('email')
       this.isLoggedIn = !!token
-      if (this.isLoggedIn && username && email) {
-        this.username = username
-        this.email = email
+      if (this.isLoggedIn) {
         await this.fetchUserInfo()
       } else {
         this.clearAuthData()
       }
     },
     async fetchUserInfo() {
+      if (this.loading) return
+
       try {
-        const response = await api.get('/users/profile')
-        const avatarPath = response.data.profile_picture
+        this.loading = true
+        const userInfo = await authService.getProfile()
+        console.log('App userInfo:', userInfo)
+
+        if (!userInfo || !userInfo.id) {
+          throw new Error('未获取到用户信息')
+        }
+
+        // 更新头像
+        const avatarPath = userInfo.profile_picture
         this.userAvatar = avatarPath
           ? avatarPath.startsWith('http')
             ? avatarPath
@@ -143,19 +147,32 @@ export default {
           : '/default-avatar.png'
 
         // 更新用户信息
-        if (response.data.username) {
-          this.username = response.data.username
-          localStorage.setItem('username', response.data.username)
-        }
-        if (response.data.email) {
-          this.email = response.data.email
-          localStorage.setItem('email', response.data.email)
-        }
+        this.username = userInfo.username
+        this.email = userInfo.email
+
+        // 更新本地存储
+        localStorage.setItem('username', this.username)
+        localStorage.setItem('email', this.email)
       } catch (error) {
         console.error('获取用户信息失败:', error)
-        if (error.response?.status === 401) {
+
+        // 如果是 API 错误
+        if (error.response) {
+          if (error.response.status === 401) {
+            this.clearAuthData()
+            messageService.error('登录已过期，请重新登录')
+            this.$router.push('/login')
+          } else {
+            messageService.error(error.response.data?.message || '获取用户信息失败')
+          }
+        } else {
+          // 如果是其他错误（如未获取到用户信息）
           this.clearAuthData()
+          messageService.error(error.message || '获取用户信息失败')
+          this.$router.push('/login')
         }
+      } finally {
+        this.loading = false
       }
     },
     clearAuthData() {
@@ -178,7 +195,10 @@ export default {
       }
     },
     logout() {
+      // 清除本地存储和状态
       this.clearAuthData()
+      messageService.success('退出登录成功')
+      // 重定向到登录页
       this.$router.push('/login')
     }
   },

@@ -17,6 +17,7 @@
           v-if="moment.user_id === currentUserId"
           @click="handleDelete(moment.id)"
           class="ml-auto text-red-500 hover:text-red-700"
+          :disabled="loading"
         >
           删除
         </button>
@@ -34,7 +35,7 @@
         >
           <img
             :src="getImageUrl(image)"
-            class="absolute inset-0 w-full h-full object-cover rounded"
+            class="absolute inset-0 w-full h-full object-cover rounded cursor-pointer hover:opacity-90"
             @click="openImagePreview(moment.images, index)"
             alt="动态图片"
           >
@@ -46,7 +47,7 @@
     <div v-if="hasMore" class="text-center py-4">
       <button
         @click="loadMore"
-        class="text-blue-500 hover:text-blue-700"
+        class="text-blue-500 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         :disabled="loading"
       >
         {{ loading ? '加载中...' : '加载更多' }}
@@ -59,18 +60,35 @@
       class="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center"
       @click="showPreview = false"
     >
-      <img
-        :src="getImageUrl(previewImages[currentPreviewIndex])"
-        class="max-w-full max-h-full object-contain"
-        alt="预览图片"
-      >
+      <div class="relative max-w-full max-h-full">
+        <img
+          :src="getImageUrl(previewImages[currentPreviewIndex])"
+          class="max-w-full max-h-[90vh] object-contain"
+          alt="预览图片"
+        >
+        <!-- 导航按钮 -->
+        <button
+          v-if="previewImages.length > 1 && currentPreviewIndex > 0"
+          @click.stop="currentPreviewIndex--"
+          class="absolute left-4 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70"
+        >
+          ←
+        </button>
+        <button
+          v-if="previewImages.length > 1 && currentPreviewIndex < previewImages.length - 1"
+          @click.stop="currentPreviewIndex++"
+          class="absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70"
+        >
+          →
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { momentApi } from '../api/moment'
 import { ref, onMounted } from 'vue'
+import { momentService, messageService } from '../api'
 
 export default {
   name: 'MomentList',
@@ -97,19 +115,24 @@ export default {
     const loadMoments = async (page = 1) => {
       try {
         loading.value = true
-        const response = await momentApi.getMoments(props.userId, page)
-        const newMoments = response.data
+        const newMoments = await momentService.getMoments(props.userId, page)
+        console.log('Loaded moments:', newMoments)  // 添加日志
+
+        if (!Array.isArray(newMoments)) {
+          throw new Error('获取动态数据格式错误')
+        }
 
         if (page === 1) {
           moments.value = newMoments
         } else {
-          moments.value.push(...newMoments)
+          moments.value = [...moments.value, ...newMoments]
         }
 
         hasMore.value = newMoments.length === 10 // 假设每页10条
         currentPage.value = page
       } catch (error) {
         console.error('获取动态失败:', error)
+        messageService.error(error.message || '获取动态失败')
       } finally {
         loading.value = false
       }
@@ -123,12 +146,32 @@ export default {
 
     const handleDelete = async (momentId) => {
       if (!confirm('确定要删除这条动态吗？')) return
+      if (loading.value) return
 
       try {
-        await momentApi.deleteMoment(momentId)
+        loading.value = true
+        console.log('Deleting moment:', momentId)
+        const result = await momentService.deleteMoment(momentId)
+        console.log('Delete result:', result)
+
+        // 从列表中移除被删除的动态
         moments.value = moments.value.filter(m => m.id !== momentId)
+        messageService.success(result?.message || '动态已删除')
       } catch (error) {
         console.error('删除动态失败:', error)
+        const errorMessage = error.response?.data?.message || '删除动态失败'
+
+        if (error.response?.status === 404) {
+          messageService.error('动态不存在或已被删除')
+          // 从列表中移除不存在的动态
+          moments.value = moments.value.filter(m => m.id !== momentId)
+        } else if (error.response?.status === 400) {
+          messageService.error(`删除动态失败: ${errorMessage}`)
+        } else {
+          messageService.error(errorMessage)
+        }
+      } finally {
+        loading.value = false
       }
     }
 
@@ -156,13 +199,15 @@ export default {
     }
 
     const addNewMoment = (newMoment) => {
-      if (newMoment && moments.value) {
-        moments.value = [newMoment, ...moments.value]
+      if (newMoment) {
+        moments.value = Array.isArray(moments.value) ? [newMoment, ...moments.value] : [newMoment]
       }
     }
 
     onMounted(() => {
-      loadMoments()
+      if (props.userId) {
+        loadMoments()
+      }
     })
 
     return {

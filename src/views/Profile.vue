@@ -13,6 +13,7 @@
               <button
                 @click="$refs.fileInput.click()"
                 class="absolute bottom-0 right-0 bg-blue-500 text-white p-1 rounded-full hover:bg-blue-600"
+                :disabled="loading"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path d="M12 4v16m8-8H4" stroke-width="2" stroke-linecap="round"/>
@@ -62,6 +63,7 @@
             <button
               @click="isEditing = true"
               class="text-blue-500 ml-2"
+              :disabled="loading"
             >
               编辑
             </button>
@@ -72,17 +74,20 @@
               class="w-full px-3 py-2 border rounded-lg"
               rows="3"
               placeholder="请输入个人简介"
+              :disabled="bioLoading"
             ></textarea>
             <div class="flex space-x-2">
               <button
                 @click="updateBio"
                 class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                :disabled="bioLoading"
               >
-                保存
+                {{ bioLoading ? '保存中...' : '保存' }}
               </button>
               <button
                 @click="cancelEdit"
                 class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+                :disabled="bioLoading"
               >
                 取消
               </button>
@@ -97,6 +102,7 @@
           <button
             @click="showCreateMoment = true"
             class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+            :disabled="loading"
           >
             发布动态
           </button>
@@ -134,7 +140,7 @@
 </template>
 
 <script>
-import api from '../services/api'
+import { authService, messageService } from '../api'
 import CreateMoment from '../components/CreateMoment.vue'
 import MomentList from '../components/MomentList.vue'
 import ChangePassword from '../components/ChangePassword.vue'
@@ -148,13 +154,28 @@ export default {
   },
   data() {
     return {
-      profile: {},
+      profile: {
+        id: '',
+        username: '',
+        email: '',
+        bio: '',
+        points: 0,
+        profile_picture: '',
+        created_at: new Date().toISOString()
+      },
       loading: true,
       isEditing: false,
       editedBio: '',
+      bioLoading: false,
       showSettings: false,
       showPasswordModal: false,
-      showCreateMoment: false
+      showCreateMoment: false,
+      maxBioLength: 200
+    }
+  },
+  computed: {
+    bioCharCount() {
+      return this.editedBio?.length || 0
     }
   },
   async created() {
@@ -166,6 +187,7 @@ export default {
   },
   methods: {
     formatDate(date) {
+      if (!date) return ''
       return new Date(date).toLocaleDateString('zh-CN', {
         year: 'numeric',
         month: 'long',
@@ -175,11 +197,41 @@ export default {
     async fetchProfile() {
       try {
         this.loading = true
-        const response = await api.get('/users/profile')
-        this.profile = response.data
+        const userInfo = await authService.getProfile()
+        console.log('Profile userInfo:', userInfo)
+
+        if (!userInfo || !userInfo.id) {
+          throw new Error('未获取到用户信息')
+        }
+
+        // 更新个人信息
+        this.profile = {
+          id: userInfo.id,
+          username: userInfo.username,
+          email: userInfo.email,
+          bio: userInfo.bio || '',
+          points: userInfo.points || 0,
+          profile_picture: userInfo.profile_picture || '',
+          created_at: userInfo.created_at,
+          status: userInfo.status
+        }
+
+        // 设置编辑状态的简介
         this.editedBio = this.profile.bio
       } catch (error) {
         console.error('获取个人信息失败:', error)
+
+        // 如果是 API 错误
+        if (error.response) {
+          messageService.error(error.response.data?.message || '获取个人信息失败')
+          if (error.response.status === 401) {
+            this.$router.push('/login')
+          }
+        } else {
+          // 如果是其他错误（如未获取到用户信息）
+          messageService.error(error.message || '获取个人信息失败')
+          this.$router.push('/login')
+        }
       } finally {
         this.loading = false
       }
@@ -195,14 +247,17 @@ export default {
       if (!file) return
 
       // 验证文件类型
-      if (!file.type.startsWith('image/')) {
-        this.$message.error('请上传图片文件')
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg']
+      if (!allowedTypes.includes(file.type)) {
+        messageService.error('请上传 JPG 或 PNG 格式的图片')
+        event.target.value = ''
         return
       }
 
       // 验证文件大小（限制为 5MB）
       if (file.size > 5 * 1024 * 1024) {
-        this.$message.error('图片大小不能超过 5MB')
+        messageService.error('图片大小不能超过 5MB')
+        event.target.value = ''
         return
       }
 
@@ -211,45 +266,58 @@ export default {
         formData.append('avatar', file)
 
         this.loading = true
-        const response = await api.put('/users/profile/avatar', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+        console.log('Uploading avatar:', {
+          name: file.name,
+          type: file.type,
+          size: file.size
         })
 
-        this.profile.profile_picture = response.data.avatarUrl
-        this.$emit('avatar-updated', response.data.avatarUrl)
-        this.$message.success('头像更新成功')
+        const response = await authService.updateAvatar(formData)
+        console.log('Upload response:', response)
+
+        if (response.avatarUrl) {
+          this.profile.profile_picture = response.avatarUrl
+          this.$emit('avatar-updated', response.avatarUrl)
+          messageService.success(response.message || '头像更新成功')
+        } else {
+          throw new Error('未获取到头像URL')
+        }
       } catch (error) {
-        this.$message.error(error.response?.data?.message || '头像更新失败')
+        console.error('头像更新失败:', error)
+        if (error.response?.status === 404) {
+          messageService.error('上传接口不存在，请联系管理员')
+        } else {
+          messageService.error(error.response?.data?.message || error.message || '头像更新失败')
+        }
       } finally {
         this.loading = false
-        event.target.value = ''
+        event.target.value = '' // 重置 input
       }
     },
     async updateBio() {
       if (this.bioLoading) return
       if (this.bioCharCount > this.maxBioLength) {
-        this.$message.warning(`简介不能超过${this.maxBioLength}字`)
+        messageService.warning(`简介不能超过${this.maxBioLength}字`)
         return
       }
 
       try {
         this.bioLoading = true
-        await api.put('/users/profile', {
-          bio: this.editedBio.trim()
+        await authService.updateProfile({
+          bio: this.editedBio?.trim() || ''
         })
-        this.profile.bio = this.editedBio.trim()
+
+        this.profile.bio = this.editedBio?.trim() || ''
         this.isEditing = false
-        this.$message.success('个人简介更新成功')
+        messageService.success('个人简介更新成功')
       } catch (error) {
-        this.$message.error(error.response?.data?.message || '更新简介失败')
+        messageService.error(error.response?.data?.message || '更新个人简介失败')
       } finally {
         this.bioLoading = false
       }
     },
     cancelEdit() {
-      this.editedBio = this.profile.bio
+      this.editedBio = this.profile.bio || ''
       this.isEditing = false
     },
     handleClickOutside(event) {
@@ -260,7 +328,7 @@ export default {
     },
     onPasswordChanged() {
       this.showPasswordModal = false
-      this.$message.success('密码修改成功')
+      messageService.success('密码修改成功')
     },
     onMomentCreated(newMoment) {
       if (this.$refs.momentList) {

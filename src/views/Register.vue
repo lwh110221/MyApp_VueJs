@@ -58,8 +58,9 @@
         <button
           type="submit"
           class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
+          :disabled="loading"
         >
-          注册
+          {{ loading ? '注册中...' : '注册' }}
         </button>
       </form>
       <div class="mt-4 text-center">
@@ -72,7 +73,7 @@
 </template>
 
 <script>
-import api from '../services/api'
+import { authService, messageService } from '../api'
 
 export default {
   name: 'Register',
@@ -82,7 +83,8 @@ export default {
       email: '',
       password: '',
       captcha: '',
-      captchaUrl: ''
+      captchaUrl: '',
+      loading: false
     }
   },
   created() {
@@ -90,25 +92,28 @@ export default {
   },
   methods: {
     refreshCaptcha() {
-      // 生成随机参数避免缓存
-      const timestamp = new Date().getTime()
-      this.captchaUrl = `${import.meta.env.VITE_API_URL}/captcha/generate?t=${timestamp}`
+      this.captchaUrl = authService.getCaptchaUrl()
       this.captcha = ''
     },
     async handleRegister() {
+      if (this.loading) return
+
       try {
-        await api.post('/users/register', {
+        this.loading = true
+        await authService.register({
           username: this.username,
           email: this.email,
           password: this.password,
           captcha: this.captcha
         })
 
+        messageService.success('注册成功，请登录')
         this.$router.push('/login')
       } catch (error) {
-        alert(error.response?.data?.message || '注册失败')
-        // 刷新验证码
+        messageService.error(error.response?.data?.message || '注册失败')
         this.refreshCaptcha()
+      } finally {
+        this.loading = false
       }
     }
   }

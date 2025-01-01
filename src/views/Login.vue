@@ -44,7 +44,7 @@
 </template>
 
 <script>
-import api from '../services/api'
+import { authService, messageService } from '../api'
 
 export default {
   name: 'Login',
@@ -70,29 +70,29 @@ export default {
 
       try {
         this.loading = true
-        const response = await api.post('/users/login', {
+        const response = await authService.login({
           email: this.email,
           password: this.password
         })
 
-        if (response.data.success) {
-          // 保存认证信息
-          localStorage.setItem('token', response.data.data.token)
-          localStorage.setItem('username', response.data.data.username)
-          localStorage.setItem('email', response.data.data.email)
+        // 保存认证信息
+        localStorage.setItem('token', response.data.token)
+        localStorage.setItem('username', response.data.username)
+        localStorage.setItem('email', response.data.email)
 
-          // 通知父组件登录成功
-          this.$emit('login-success')
+        // 显示成功消息
+        messageService.success('登录成功')
 
-          // 延迟跳转，确保token已经保存
-          setTimeout(() => {
-            this.$router.push('/')
-          }, 100)
-        } else {
-          this.errorMessage = response.data.message || '登录失败'
-        }
+        // 通知父组件登录成功
+        this.$emit('login-success')
+
+        // 延迟跳转，确保token已经保存
+        setTimeout(() => {
+          this.$router.push('/')
+        }, 100)
       } catch (error) {
         this.errorMessage = error.response?.data?.message || '登录失败'
+        messageService.error(this.errorMessage)
       } finally {
         this.loading = false
       }
