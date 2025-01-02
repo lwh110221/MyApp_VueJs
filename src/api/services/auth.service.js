@@ -9,7 +9,21 @@ class AuthService {
    * @returns {Promise}
    */
   async login(credentials) {
-    return API.post('/users/login', credentials)
+    try {
+      const response = await API.post('/users/login', credentials)
+      return response
+    } catch (error) {
+      // 处理特定的错误情况
+      if (error.response?.status === 400) {
+        const errorMessage = error.response.data?.message
+        if (errorMessage.includes('密码错误')) {
+          throw new Error('密码错误，请重新输入')
+        } else if (errorMessage.includes('不存在')) {
+          throw new Error('该邮箱未注册，请先注册')
+        }
+      }
+      throw error
+    }
   }
 
   /**
@@ -22,7 +36,21 @@ class AuthService {
    * @returns {Promise}
    */
   async register(userData) {
-    return API.post('/users/register', userData)
+    try {
+      const response = await API.post('/users/register', userData)
+      return response
+    } catch (error) {
+      // 处理特定的错误情况
+      if (error.response?.status === 400) {
+        const errorMessage = error.response.data?.message
+        if (errorMessage.includes('邮箱已被注册')) {
+          throw new Error('该邮箱已被注册，请使用其他邮箱')
+        } else if (errorMessage.includes('验证码')) {
+          throw new Error('验证码错误或已过期，请重新输入')
+        }
+      }
+      throw error
+    }
   }
 
   /**

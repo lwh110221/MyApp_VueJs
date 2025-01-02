@@ -6,14 +6,14 @@
           <div class="flex items-center space-x-4">
             <div class="relative">
               <img
-                :src="getImageUrl(profile.profile_picture)"
+                :src="authStore.userAvatar"
                 class="w-20 h-20 rounded-full object-cover"
                 alt="用户头像"
               >
               <button
                 @click="$refs.fileInput.click()"
                 class="absolute bottom-0 right-0 bg-blue-500 text-white p-1 rounded-full hover:bg-blue-600"
-                :disabled="loading"
+                :disabled="authStore.loading"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path d="M12 4v16m8-8H4" stroke-width="2" stroke-linecap="round"/>
@@ -28,10 +28,10 @@
               >
             </div>
             <div>
-              <h2 class="text-2xl font-bold text-gray-800">{{ profile.username }}</h2>
-              <p class="text-gray-600">{{ profile.email }}</p>
-              <p class="text-gray-600">积分：{{ profile.points || 0 }}</p>
-              <p class="text-gray-600">注册时间：{{ formatDate(profile.created_at) }}</p>
+              <h2 class="text-2xl font-bold text-gray-800">{{ authStore.user.username }}</h2>
+              <p class="text-gray-600">{{ authStore.user.email }}</p>
+              <p class="text-gray-600">积分：{{ authStore.user.points || 0 }}</p>
+              <p class="text-gray-600">注册时间：{{ formatDate(authStore.user.created_at) }}</p>
             </div>
           </div>
 
@@ -59,11 +59,11 @@
         <div>
           <h3 class="text-lg font-semibold text-gray-800 mb-2">个人简介</h3>
           <div v-if="!isEditing" class="text-gray-600">
-            {{ profile.bio || '暂无简介' }}
+            {{ authStore.user.bio || '暂无简介' }}
             <button
-              @click="isEditing = true"
+              @click="startEdit"
               class="text-blue-500 ml-2"
-              :disabled="loading"
+              :disabled="authStore.loading"
             >
               编辑
             </button>
@@ -102,7 +102,7 @@
           <button
             @click="showCreateMoment = true"
             class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-            :disabled="loading"
+            :disabled="momentStore.loading"
           >
             发布动态
           </button>
@@ -115,10 +115,10 @@
         />
 
         <MomentList
-          v-if="profile.id"
+          v-if="authStore.user.id"
           ref="momentList"
-          :userId="profile.id"
-          :currentUserId="profile.id"
+          :userId="authStore.user.id"
+          :currentUserId="authStore.user.id"
         />
       </div>
     </div>
@@ -140,7 +140,8 @@
 </template>
 
 <script>
-import { authService, messageService } from '../api'
+import { useAuthStore } from '../stores/auth'
+import { useMomentStore } from '../stores/moment'
 import CreateMoment from '../components/CreateMoment.vue'
 import MomentList from '../components/MomentList.vue'
 import ChangePassword from '../components/ChangePassword.vue'
@@ -152,18 +153,17 @@ export default {
     MomentList,
     ChangePassword
   },
+  setup() {
+    const authStore = useAuthStore()
+    const momentStore = useMomentStore()
+
+    return {
+      authStore,
+      momentStore
+    }
+  },
   data() {
     return {
-      profile: {
-        id: '',
-        username: '',
-        email: '',
-        bio: '',
-        points: 0,
-        profile_picture: '',
-        created_at: new Date().toISOString()
-      },
-      loading: true,
       isEditing: false,
       editedBio: '',
       bioLoading: false,
@@ -179,7 +179,7 @@ export default {
     }
   },
   async created() {
-    await this.fetchProfile()
+    await this.authStore.checkAuth()
     document.addEventListener('click', this.handleClickOutside)
   },
   beforeUnmount() {
@@ -194,53 +194,9 @@ export default {
         day: 'numeric'
       })
     },
-    async fetchProfile() {
-      try {
-        this.loading = true
-        const userInfo = await authService.getProfile()
-        console.log('Profile userInfo:', userInfo)
-
-        if (!userInfo || !userInfo.id) {
-          throw new Error('未获取到用户信息')
-        }
-
-        // 更新个人信息
-        this.profile = {
-          id: userInfo.id,
-          username: userInfo.username,
-          email: userInfo.email,
-          bio: userInfo.bio || '',
-          points: userInfo.points || 0,
-          profile_picture: userInfo.profile_picture || '',
-          created_at: userInfo.created_at,
-          status: userInfo.status
-        }
-
-        // 设置编辑状态的简介
-        this.editedBio = this.profile.bio
-      } catch (error) {
-        console.error('获取个人信息失败:', error)
-
-        // 如果是 API 错误
-        if (error.response) {
-          messageService.error(error.response.data?.message || '获取个人信息失败')
-          if (error.response.status === 401) {
-            this.$router.push('/login')
-          }
-        } else {
-          // 如果是其他错误（如未获取到用户信息）
-          messageService.error(error.message || '获取个人信息失败')
-          this.$router.push('/login')
-        }
-      } finally {
-        this.loading = false
-      }
-    },
-    getImageUrl(path) {
-      if (!path) return '/default-avatar.png'
-      if (path.startsWith('http')) return path
-      const baseUrl = import.meta.env.VITE_API_URL.replace('/api', '')
-      return `${baseUrl}${path}`
+    startEdit() {
+      this.editedBio = this.authStore.user.bio || ''
+      this.isEditing = true
     },
     async handleAvatarChange(event) {
       const file = event.target.files[0]
@@ -264,34 +220,10 @@ export default {
       try {
         const formData = new FormData()
         formData.append('avatar', file)
-
-        this.loading = true
-        console.log('Uploading avatar:', {
-          name: file.name,
-          type: file.type,
-          size: file.size
-        })
-
-        const response = await authService.updateAvatar(formData)
-        console.log('Upload response:', response)
-
-        if (response.avatarUrl) {
-          this.profile.profile_picture = response.avatarUrl
-          this.$emit('avatar-updated', response.avatarUrl)
-          messageService.success(response.message || '头像更新成功')
-        } else {
-          throw new Error('未获取到头像URL')
-        }
+        await this.authStore.updateAvatar(formData)
+        event.target.value = ''
       } catch (error) {
-        console.error('头像更新失败:', error)
-        if (error.response?.status === 404) {
-          messageService.error('上传接口不存在，请联系管理员')
-        } else {
-          messageService.error(error.response?.data?.message || error.message || '头像更新失败')
-        }
-      } finally {
-        this.loading = false
-        event.target.value = '' // 重置 input
+        event.target.value = ''
       }
     },
     async updateBio() {
@@ -303,21 +235,16 @@ export default {
 
       try {
         this.bioLoading = true
-        await authService.updateProfile({
+        await this.authStore.updateProfile({
           bio: this.editedBio?.trim() || ''
         })
-
-        this.profile.bio = this.editedBio?.trim() || ''
         this.isEditing = false
-        messageService.success('个人简介更新成功')
-      } catch (error) {
-        messageService.error(error.response?.data?.message || '更新个人简介失败')
       } finally {
         this.bioLoading = false
       }
     },
     cancelEdit() {
-      this.editedBio = this.profile.bio || ''
+      this.editedBio = this.authStore.user.bio || ''
       this.isEditing = false
     },
     handleClickOutside(event) {
@@ -328,7 +255,6 @@ export default {
     },
     onPasswordChanged() {
       this.showPasswordModal = false
-      messageService.success('密码修改成功')
     },
     onMomentCreated(newMoment) {
       if (this.$refs.momentList) {

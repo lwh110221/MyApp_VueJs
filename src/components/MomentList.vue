@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <div v-for="moment in moments" :key="moment.id" class="bg-white rounded-lg shadow p-4">
+    <div v-for="moment in momentStore.moments" :key="moment.id" class="bg-white rounded-lg shadow p-4">
       <!-- 用户信息 -->
       <div class="flex items-center space-x-3 mb-4">
         <img
@@ -17,7 +17,7 @@
           v-if="moment.user_id === currentUserId"
           @click="handleDelete(moment.id)"
           class="ml-auto text-red-500 hover:text-red-700"
-          :disabled="loading"
+          :disabled="momentStore.loading"
         >
           删除
         </button>
@@ -44,13 +44,13 @@
     </div>
 
     <!-- 加载更多 -->
-    <div v-if="hasMore" class="text-center py-4">
+    <div v-if="momentStore.hasMore" class="text-center py-4">
       <button
         @click="loadMore"
         class="text-blue-500 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        :disabled="loading"
+        :disabled="momentStore.loading"
       >
-        {{ loading ? '加载中...' : '加载更多' }}
+        {{ momentStore.loading ? '加载中...' : '加载更多' }}
       </button>
     </div>
 
@@ -88,7 +88,7 @@
 
 <script>
 import { ref, onMounted } from 'vue'
-import { momentService, messageService } from '../api'
+import { useMomentStore } from '../stores/moment'
 
 export default {
   name: 'MomentList',
@@ -104,74 +104,32 @@ export default {
   },
 
   setup(props) {
-    const moments = ref([])
-    const currentPage = ref(1)
-    const hasMore = ref(true)
-    const loading = ref(false)
+    const momentStore = useMomentStore()
     const showPreview = ref(false)
     const previewImages = ref([])
     const currentPreviewIndex = ref(0)
 
     const loadMoments = async (page = 1) => {
       try {
-        loading.value = true
-        const newMoments = await momentService.getMoments(props.userId, page)
-        console.log('Loaded moments:', newMoments)  // 添加日志
-
-        if (!Array.isArray(newMoments)) {
-          throw new Error('获取动态数据格式错误')
-        }
-
-        if (page === 1) {
-          moments.value = newMoments
-        } else {
-          moments.value = [...moments.value, ...newMoments]
-        }
-
-        hasMore.value = newMoments.length === 10 // 假设每页10条
-        currentPage.value = page
+        await momentStore.fetchMoments(props.userId, page)
       } catch (error) {
-        console.error('获取动态失败:', error)
-        messageService.error(error.message || '获取动态失败')
-      } finally {
-        loading.value = false
+        console.error('加载动态失败:', error)
       }
     }
 
     const loadMore = () => {
-      if (!loading.value && hasMore.value) {
-        loadMoments(currentPage.value + 1)
+      if (!momentStore.loading && momentStore.hasMore) {
+        loadMoments(momentStore.currentPage + 1)
       }
     }
 
     const handleDelete = async (momentId) => {
       if (!confirm('确定要删除这条动态吗？')) return
-      if (loading.value) return
 
       try {
-        loading.value = true
-        console.log('Deleting moment:', momentId)
-        const result = await momentService.deleteMoment(momentId)
-        console.log('Delete result:', result)
-
-        // 从列表中移除被删除的动态
-        moments.value = moments.value.filter(m => m.id !== momentId)
-        messageService.success(result?.message || '动态已删除')
+        await momentStore.deleteMoment(momentId)
       } catch (error) {
         console.error('删除动态失败:', error)
-        const errorMessage = error.response?.data?.message || '删除动态失败'
-
-        if (error.response?.status === 404) {
-          messageService.error('动态不存在或已被删除')
-          // 从列表中移除不存在的动态
-          moments.value = moments.value.filter(m => m.id !== momentId)
-        } else if (error.response?.status === 400) {
-          messageService.error(`删除动态失败: ${errorMessage}`)
-        } else {
-          messageService.error(errorMessage)
-        }
-      } finally {
-        loading.value = false
       }
     }
 
@@ -200,7 +158,7 @@ export default {
 
     const addNewMoment = (newMoment) => {
       if (newMoment) {
-        moments.value = Array.isArray(moments.value) ? [newMoment, ...moments.value] : [newMoment]
+        momentStore.moments = [newMoment, ...momentStore.moments]
       }
     }
 
@@ -211,9 +169,7 @@ export default {
     })
 
     return {
-      moments,
-      hasMore,
-      loading,
+      momentStore,
       showPreview,
       previewImages,
       currentPreviewIndex,
@@ -222,8 +178,7 @@ export default {
       openImagePreview,
       getImageUrl,
       formatDate,
-      addNewMoment,
-      loadMoments
+      addNewMoment
     }
   }
 }
