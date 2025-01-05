@@ -1,4 +1,5 @@
 import API from '../http'
+import { AUTH_ENDPOINTS } from '../endpoints'
 
 class AuthService {
   /**
@@ -10,7 +11,7 @@ class AuthService {
    */
   async login(credentials) {
     try {
-      const response = await API.post('/users/login', credentials)
+      const response = await API.post(AUTH_ENDPOINTS.LOGIN, credentials)
       return response
     } catch (error) {
       // 处理特定的错误情况
@@ -37,7 +38,7 @@ class AuthService {
    */
   async register(userData) {
     try {
-      const response = await API.post('/users/register', userData)
+      const response = await API.post(AUTH_ENDPOINTS.REGISTER, userData)
       return response
     } catch (error) {
       // 处理特定的错误情况
@@ -62,7 +63,7 @@ class AuthService {
    * @returns {Promise}
    */
   async changePassword(passwordData) {
-    return API.put('/users/password', passwordData)
+    return API.put(AUTH_ENDPOINTS.CHANGE_PASSWORD, passwordData)
   }
 
   /**
@@ -71,7 +72,7 @@ class AuthService {
    */
   async getProfile() {
     try {
-      const userData = await API.get('/users/profile')
+      const userData = await API.get(AUTH_ENDPOINTS.GET_PROFILE)
       console.log('Profile Response:', userData)
 
       return {
@@ -97,7 +98,7 @@ class AuthService {
    * @returns {Promise}
    */
   async updateProfile(profileData) {
-    return API.put('/users/profile', profileData)
+    return API.put(AUTH_ENDPOINTS.UPDATE_PROFILE, profileData)
   }
 
   /**
@@ -108,7 +109,7 @@ class AuthService {
   async updateAvatar(formData) {
     try {
       console.log('Updating avatar with formData:', formData)
-      const response = await API.put('/users/profile/avatar', formData, {
+      const response = await API.put(AUTH_ENDPOINTS.UPDATE_AVATAR, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -127,7 +128,7 @@ class AuthService {
    */
   getCaptchaUrl() {
     const timestamp = new Date().getTime()
-    return `${import.meta.env.VITE_API_URL}/captcha/generate?t=${timestamp}`
+    return `${import.meta.env.VITE_API_URL}${AUTH_ENDPOINTS.GENERATE_CAPTCHA}?t=${timestamp}`
   }
 }
 

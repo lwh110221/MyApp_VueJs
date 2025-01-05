@@ -1,21 +1,7 @@
 import axios from 'axios'
 import router from '../router'
 import { logger } from '../utils/logger'
-
-// API 配置
-const API_CONFIG = {
-  baseURL: import.meta.env.VITE_API_URL,
-  timeout: 15000,
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
-}
-
-// 请求重试配置
-const MAX_RETRIES = 2
-const RETRY_DELAY = 1000
+import { API_CONFIG, RETRY_CONFIG, HTTP_STATUS, CONTENT_TYPES } from './axiosConfig'
 
 class API {
   constructor() {
@@ -69,7 +55,7 @@ class API {
         logger.logError(error, `API Error: ${originalRequest.url}`)
 
         // 处理401错误
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === HTTP_STATUS.UNAUTHORIZED && !originalRequest._retry) {
           localStorage.removeItem('token')
           localStorage.removeItem('username')
           localStorage.removeItem('email')
@@ -88,28 +74,28 @@ class API {
           originalRequest._retryCount = 0
         }
 
-        if (originalRequest._retryCount < MAX_RETRIES &&
-            (error.code === 'ECONNABORTED' || error.response?.status >= 500)) {
+        if (originalRequest._retryCount < RETRY_CONFIG.MAX_RETRIES &&
+            (error.code === 'ECONNABORTED' || error.response?.status >= HTTP_STATUS.INTERNAL_SERVER_ERROR)) {
           originalRequest._retryCount++
 
           logger.logError(
             error,
-            `Retrying request (${originalRequest._retryCount}/${MAX_RETRIES}): ${originalRequest.url}`
+            `Retrying request (${originalRequest._retryCount}/${RETRY_CONFIG.MAX_RETRIES}): ${originalRequest.url}`
           )
 
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+          await new Promise(resolve => setTimeout(resolve, RETRY_CONFIG.RETRY_DELAY))
           return this.instance(originalRequest)
         }
 
         // 处理特定错误状态码
         switch (error.response?.status) {
-          case 403:
+          case HTTP_STATUS.FORBIDDEN:
             router.push('/403')
             break
-          case 404:
+          case HTTP_STATUS.NOT_FOUND:
             router.push('/404')
             break
-          case 500:
+          case HTTP_STATUS.INTERNAL_SERVER_ERROR:
             router.push('/500')
             break
         }
@@ -127,8 +113,8 @@ class API {
         method,
         url,
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          'Content-Type': CONTENT_TYPES.JSON,
+          'Accept': CONTENT_TYPES.JSON,
           ...config.headers
         },
         ...config
@@ -165,7 +151,7 @@ class API {
     return this.request('put', url, data, {
       ...config,
       headers: {
-        'Content-Type': isFormData ? 'multipart/form-data' : 'application/json',
+        'Content-Type': isFormData ? CONTENT_TYPES.FORM_DATA : CONTENT_TYPES.JSON,
         ...config.headers
       }
     })
@@ -176,7 +162,7 @@ class API {
     return this.request('delete', url, null, {
       ...config,
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': CONTENT_TYPES.JSON,
         ...config.headers
       }
     })
@@ -187,7 +173,7 @@ class API {
     return this.request('post', url, formData, {
       ...config,
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': CONTENT_TYPES.FORM_DATA,
         ...config.headers
       }
     })

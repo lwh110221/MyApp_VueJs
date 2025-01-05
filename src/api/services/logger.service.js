@@ -1,8 +1,9 @@
 import API from '../http'
+import { LOGGER_ENDPOINTS } from '../endpoints'
 
 class LoggerService {
   constructor() {
-    this.loggerUrl = 'http://localhost:3030/log'
+    this.loggerUrl = LOGGER_ENDPOINTS.LOG_ERROR
   }
 
   /**

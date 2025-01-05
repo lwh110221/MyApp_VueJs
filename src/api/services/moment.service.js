@@ -1,4 +1,5 @@
 import API from '../http'
+import { MOMENT_ENDPOINTS } from '../endpoints'
 
 class MomentService {
   /**
@@ -19,11 +20,11 @@ class MomentService {
         data.images.forEach(image => {
           formData.append('images', image)
         })
-        return API.upload('/moments', formData)
+        return API.upload(MOMENT_ENDPOINTS.CREATE, formData)
       }
 
       // 如果没有图片，直接发送 JSON
-      return API.post('/moments', {
+      return API.post(MOMENT_ENDPOINTS.CREATE, {
         content: data.content || ''
       })
     } catch (error) {
@@ -41,7 +42,7 @@ class MomentService {
    */
   async getMoments(userId, page = 1, limit = 10) {
     try {
-      const response = await API.get(`/moments/user/${userId || ''}`, {
+      const response = await API.get(MOMENT_ENDPOINTS.GET_USER_MOMENTS(userId), {
         page,
         limit
       })
@@ -60,7 +61,7 @@ class MomentService {
    */
   async deleteMoment(momentId) {
     try {
-      const response = await API.delete(`/moments/${momentId}`)
+      const response = await API.delete(MOMENT_ENDPOINTS.DELETE(momentId))
       return response || { message: '动态已删除' }
     } catch (error) {
       console.error('Delete moment error:', error)
