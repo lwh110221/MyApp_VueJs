@@ -12,7 +12,7 @@ export {
 }
 
 // 导出基础 API 实例，以便在特殊情况下直接使用
-export { default as API } from './API'
+export { default as API } from './http'
 
 // 导出常量
 export const API_CONFIG = {
