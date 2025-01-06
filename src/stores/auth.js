@@ -24,7 +24,7 @@ export const useAuthStore = defineStore('auth', {
       if (state.user.profile_picture.startsWith('http')) {
         return state.user.profile_picture
       }
-      return `${import.meta.env.VITE_API_URL.replace('/api', '')}${state.user.profile_picture}`
+      return `${import.meta.env.VITE_BASE_API_URL.replace('/api', '')}${state.user.profile_picture}`
     },
 
     // 用于表单显示的用户信息

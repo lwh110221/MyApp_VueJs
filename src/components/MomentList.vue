@@ -142,7 +142,7 @@ export default {
     const getImageUrl = (path) => {
       if (!path) return '/default-avatar.png'
       if (path.startsWith('http')) return path
-      const baseUrl = import.meta.env.VITE_API_URL.replace('/api', '')
+      const baseUrl = import.meta.env.VITE_BASE_API_URL.replace('/api', '')
       return `${baseUrl}${path}`
     }
 

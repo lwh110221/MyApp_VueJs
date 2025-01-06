@@ -128,7 +128,7 @@ class AuthService {
    */
   getCaptchaUrl() {
     const timestamp = new Date().getTime()
-    return `${import.meta.env.VITE_API_URL}${AUTH_ENDPOINTS.GENERATE_CAPTCHA}?t=${timestamp}`
+    return `${import.meta.env.VITE_BASE_API_URL}${AUTH_ENDPOINTS.GENERATE_CAPTCHA}?t=${timestamp}`
   }
 }
 
