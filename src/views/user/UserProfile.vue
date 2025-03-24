@@ -31,7 +31,7 @@
               <!-- 粉丝和关注数 -->
               <div class="flex space-x-3 mt-2 text-sm">
                 <span class="text-gray-600">关注：{{ userProfile.following_count || 0 }}</span>
-                <span class="text-gray-600">粉丝：{{ userProfile.followers_count || 0 }}</span>
+                <span class="text-gray-600">粉丝：{{ userProfile.follower_count || 0 }}</span>
               </div>
             </div>
           </div>
@@ -75,6 +75,12 @@
         <div class="border-t pt-6">
           <h3 class="text-xl font-semibold mb-4">最近动态</h3>
           <MomentList :user-id="userId" :key="'moments_' + userId" />
+
+          <!-- 关注和粉丝列表 -->
+          <div class="mt-8">
+            <h3 class="text-xl font-semibold mb-4">关注信息</h3>
+            <UserFollowCard :user-id="userId" :key="'follows_' + userId" />
+          </div>
         </div>
       </div>
 
@@ -224,8 +230,14 @@ export default {
       }
     })
 
+    // 在组件挂载时记录一下用户资料信息
     onMounted(() => {
       fetchUserProfile()
+        .then(() => {
+          console.log('用户资料加载完成：', userProfile.value)
+          console.log('关注状态:', userProfile.value ? userProfile.value.is_followed : 'N/A')
+          console.log('粉丝数:', userProfile.value ? userProfile.value.follower_count : 'N/A')
+        })
     })
 
     return {

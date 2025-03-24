@@ -50,7 +50,7 @@ export const HELP_ENDPOINTS = {
 
 // 日志相关接口
 export const LOGGER_ENDPOINTS = {
-  LOG_ERROR: 'http://localhost:3030/log'
+  LOG_ERROR: '/log/error'
 }
 
 // API 版本

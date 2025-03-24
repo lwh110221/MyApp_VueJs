@@ -173,15 +173,25 @@ export const useUserStore = defineStore('user', {
         this.followingLoading = true
         const response = await userService.getFollowingList(userId, params)
 
-        this.following = response.following || []
-        this.pagination.following = {
-          total: response.total || 0,
-          page: params.page,
-          limit: params.limit
+        if (response && response.data) {
+          this.following = response.data.items || []
+          this.pagination.following = {
+            total: response.data.pagination.total || 0,
+            page: parseInt(response.data.pagination.page) || params.page,
+            limit: parseInt(response.data.pagination.limit) || params.limit
+          }
+        } else {
+          this.following = []
+          this.pagination.following = {
+            total: 0,
+            page: params.page,
+            limit: params.limit
+          }
         }
 
         return response
       } catch (error) {
+        console.error('获取关注列表失败:', error)
         messageService.error('获取关注列表失败')
         throw error
       } finally {
@@ -199,15 +209,25 @@ export const useUserStore = defineStore('user', {
         this.followersLoading = true
         const response = await userService.getFollowersList(userId, params)
 
-        this.followers = response.followers || []
-        this.pagination.followers = {
-          total: response.total || 0,
-          page: params.page,
-          limit: params.limit
+        if (response && response.data) {
+          this.followers = response.data.items || []
+          this.pagination.followers = {
+            total: response.data.pagination.total || 0,
+            page: parseInt(response.data.pagination.page) || params.page,
+            limit: parseInt(response.data.pagination.limit) || params.limit
+          }
+        } else {
+          this.followers = []
+          this.pagination.followers = {
+            total: 0,
+            page: params.page,
+            limit: params.limit
+          }
         }
 
         return response
       } catch (error) {
+        console.error('获取粉丝列表失败:', error)
         messageService.error('获取粉丝列表失败')
         throw error
       } finally {
