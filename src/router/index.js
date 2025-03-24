@@ -86,6 +86,78 @@ const routes = [
   }
 ]
 
+// 新闻模块路由
+const newsRoutes = {
+  path: '/news',
+  name: 'News',
+  component: () => import('@/views/news/NewsList.vue'),
+  meta: {
+    title: '新闻中心'
+  }
+};
+
+const newsDetailRoute = {
+  path: '/news/detail/:id',
+  name: 'NewsDetail',
+  component: () => import('@/views/news/NewsDetail.vue'),
+  meta: {
+    title: '新闻详情'
+  }
+};
+
+// 将新闻路由添加到路由配置中
+routes.push(newsRoutes);
+routes.push(newsDetailRoute);
+
+// 社区模块路由
+const communityRoutes = {
+  path: '/community',
+  name: 'Community',
+  component: () => import('@/views/community/CommunityList.vue'),
+  meta: {
+    title: '社区'
+  }
+};
+
+const communityDetailRoute = {
+  path: '/community/post/:id',
+  name: 'PostDetail',
+  component: () => import('@/views/community/PostDetail.vue'),
+  meta: {
+    title: '帖子详情'
+  }
+};
+
+const communityCreateRoute = {
+  path: '/community/create',
+  name: 'CreatePost',
+  component: () => import('@/views/community/CreatePost.vue'),
+  meta: {
+    requiresAuth: true,
+    title: '发布帖子'
+  }
+};
+
+const communityEditRoute = {
+  path: '/community/edit/:id',
+  name: 'EditPost',
+  component: () => import('@/views/community/CreatePost.vue'),
+  meta: {
+    requiresAuth: true,
+    title: '编辑帖子'
+  },
+  props: route => ({
+    isEdit: true,
+    postId: parseInt(route.params.id)
+  })
+};
+
+// 将社区路由添加到路由配置中
+routes.push(communityRoutes);
+routes.push(communityDetailRoute);
+routes.push(communityCreateRoute);
+routes.push(communityEditRoute);
+
 const router = createRouter({
   history: createWebHistory(),
   routes
