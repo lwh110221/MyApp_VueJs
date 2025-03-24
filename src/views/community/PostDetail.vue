@@ -330,6 +330,23 @@ export default {
         // 确保postId是数字类型
         const response = await communityService.getPostDetail(Number(postId.value));
         if (response && response.data) {
+          console.log("获取到的帖子数据:", response.data);
+
+          // 处理帖子图片数据
+          if (response.data.images) {
+            if (typeof response.data.images === 'string') {
+              try {
+                response.data.images = JSON.parse(response.data.images);
+              } catch (err) {
+                console.error("解析帖子图片数据错误:", err);
+                response.data.images = [];
+              }
+            } else if (!Array.isArray(response.data.images)) {
+              response.data.images = [];
+            }
+            console.log("处理后的帖子图片:", response.data.images);
+          }
+
           post.value = response.data;
           // 加载完帖子后检查用户是否已点赞
           checkUserLike();

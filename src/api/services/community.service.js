@@ -34,6 +34,9 @@ export default {
    * @param {Array} postData.tags 标签数组
    */
   createPost(postData) {
+    console.log('准备发送创建帖子请求', {
+      data: postData
+    });
     return http.post('/community/posts', postData);
   },
 
@@ -43,7 +46,11 @@ export default {
    * @param {Object} postData 帖子数据
    */
   updatePost(postId, postData) {
-    return http.put(`/community/posts/${postId}`, postData);
+    console.log('准备发送更新帖子请求', {
+      postId: Number(postId),
+      data: postData
+    });
+    return http.put(`/community/posts/${Number(postId)}`, postData);
   },
 
   /**

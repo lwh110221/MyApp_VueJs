@@ -15,6 +15,7 @@
               <router-link to="/" class="text-gray-600 hover:text-gray-800">首页</router-link>
               <router-link to="/news" class="text-gray-600 hover:text-gray-800">新闻</router-link>
               <router-link to="/community" class="text-gray-600 hover:text-gray-800">社区</router-link>
+              <router-link to="/help" class="text-gray-600 hover:text-gray-800">专家求助</router-link>
             </div>
 
             <!-- 移动端菜单按钮 -->
@@ -111,6 +112,7 @@
         <router-link to="/" class="text-gray-600 hover:text-gray-800 py-2" @click="showMobileMenu = false">首页</router-link>
         <router-link to="/news" class="text-gray-600 hover:text-gray-800 py-2" @click="showMobileMenu = false">新闻</router-link>
         <router-link to="/community" class="text-gray-600 hover:text-gray-800 py-2" @click="showMobileMenu = false">社区</router-link>
+        <router-link to="/help" class="text-gray-600 hover:text-gray-800 py-2" @click="showMobileMenu = false">专家求助</router-link>
       </div>
     </div>
   </div>

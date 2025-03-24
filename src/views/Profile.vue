@@ -28,7 +28,11 @@
               >
             </div>
             <div>
-              <h2 class="text-2xl font-bold text-gray-800">{{ authStore.user.username }}</h2>
+              <div class="flex items-center">
+                <h2 class="text-2xl font-bold text-gray-800">{{ authStore.user.username }}</h2>
+                <!-- 身份标记 -->
+                <UserIdentities v-if="identityStore.userIdentities.length > 0" :identities="identityStore.userIdentities" class="ml-3" />
+              </div>
               <p class="text-gray-600">{{ authStore.user.email }}</p>
               <p class="text-gray-600">积分：{{ authStore.user.points || 0 }}</p>
               <p class="text-gray-600">注册时间：{{ formatDate(authStore.user.created_at) }}</p>
@@ -96,6 +100,18 @@
         </div>
       </div>
 
+      <!-- 身份认证卡片 -->
+      <IdentityCard />
+
+      <!-- 用户积分卡片 -->
+      <UserPointsCard />
+
+      <!-- 用户关注/粉丝卡片 -->
+      <UserFollowCard
+        v-if="authStore.user.id"
+        :userId="authStore.user.id"
+      />
+
       <div class="mb-6">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-xl font-semibold text-gray-800">我的动态</h3>
@@ -142,24 +158,36 @@
 <script>
 import { useAuthStore } from '../stores/auth'
 import { useMomentStore } from '../stores/moment'
+import { useIdentityStore } from '../stores/identity'
+import { messageService } from '../api'
 import CreateMoment from '../components/CreateMoment.vue'
 import MomentList from '../components/MomentList.vue'
 import ChangePassword from '../components/ChangePassword.vue'
+import UserPointsCard from '../components/UserPointsCard.vue'
+import UserFollowCard from '../components/UserFollowCard.vue'
+import IdentityCard from '../components/IdentityCard.vue'
+import UserIdentities from '../components/UserIdentities.vue'
 
 export default {
   name: 'Profile',
   components: {
     CreateMoment,
     MomentList,
-    ChangePassword
+    ChangePassword,
+    UserPointsCard,
+    UserFollowCard,
+    IdentityCard,
+    UserIdentities
   },
   setup() {
     const authStore = useAuthStore()
     const momentStore = useMomentStore()
+    const identityStore = useIdentityStore()
 
     return {
       authStore,
-      momentStore
+      momentStore,
+      identityStore
     }
   },
   data() {
@@ -180,6 +208,8 @@ export default {
   },
   async created() {
     await this.authStore.checkAuth()
+    // 加载用户身份信息
+    this.identityStore.fetchUserIdentities()
     document.addEventListener('click', this.handleClickOutside)
   },
   beforeUnmount() {

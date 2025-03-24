@@ -391,10 +391,17 @@ export default {
           });
 
           const uploadResponse = await communityService.uploadImages(formData);
-          if (uploadResponse && uploadResponse.data) {
+          console.log("帖子图片上传响应:", uploadResponse);
+
+          if (uploadResponse && uploadResponse.code === 200 && uploadResponse.data) {
+            // 从响应中正确提取图片URL
+            const uploadedUrlsList = Array.isArray(uploadResponse.data) ?
+              uploadResponse.data.map(img => img.url) : [];
+            console.log("提取的帖子图片URL:", uploadedUrlsList);
+
             uploadedImageUrls = [
               ...uploadedImageUrls,
-              ...(uploadResponse.data.images || [])
+              ...uploadedUrlsList
             ];
           }
         }
@@ -407,14 +414,18 @@ export default {
           images: uploadedImageUrls
         };
 
+        console.log("准备提交的帖子数据:", postData);
+
         let response;
 
         // 创建或更新帖子
         if (props.isEdit && currentPostId.value) {
           response = await communityService.updatePost(currentPostId.value, postData);
+          console.log("更新帖子响应:", response);
           toast.success('帖子更新成功');
         } else {
           response = await communityService.createPost(postData);
+          console.log("创建帖子响应:", response);
           toast.success('帖子发布成功');
         }
 

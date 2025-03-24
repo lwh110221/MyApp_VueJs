@@ -301,7 +301,8 @@ export default {
     const getImageUrl = (path) => {
       if (!path) return '';
       if (path.startsWith('http')) return path;
-      return `${process.env.VUE_APP_API_BASE_URL}${path}`;
+      const baseUrl = import.meta.env.VITE_BASE_API_URL?.replace('/api', '') || process.env.VUE_APP_API_BASE_URL || 'http://localhost:3000';
+      return `${baseUrl}${path}`;
     };
 
     // 防抖搜索

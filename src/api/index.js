@@ -2,13 +2,19 @@ import authService from './services/auth.service'
 import momentService from './services/moment.service'
 import loggerService from './services/logger.service'
 import messageService from './services/message.service'
+import userService from './services/user.service'
+import identityService from './services/identity.service'
+import helpService from './services/help.service'
 
 // 导出服务
 export {
   authService,
   momentService,
   loggerService,
-  messageService
+  messageService,
+  userService,
+  identityService,
+  helpService
 }
 
 // 导出基础 API 实例，以便在特殊情况下直接使用

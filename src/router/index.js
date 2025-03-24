@@ -33,6 +33,14 @@ const routes = [
     }
   },
   {
+    path: '/user/:id',
+    name: 'userProfile',
+    component: () => import('../views/user/UserProfile.vue'),
+    meta: {
+      title: '用户主页'
+    }
+  },
+  {
     path: '/change-password',
     name: 'changePassword',
     component: () => import('../views/ChangePassword.vue'),
@@ -157,6 +165,40 @@ routes.push(communityRoutes);
 routes.push(communityDetailRoute);
 routes.push(communityCreateRoute);
 routes.push(communityEditRoute);
+
+// 专家求助模块路由
+const helpRoutes = {
+  path: '/help',
+  name: 'Help',
+  component: () => import('@/views/help/HelpList.vue'),
+  meta: {
+    title: '专家求助'
+  }
+};
+
+const helpDetailRoute = {
+  path: '/help/post/:id',
+  name: 'HelpDetail',
+  component: () => import('@/views/help/HelpDetail.vue'),
+  meta: {
+    title: '求助详情'
+  }
+};
+
+const helpCreateRoute = {
+  path: '/help/create',
+  name: 'CreateHelp',
+  component: () => import('@/views/help/CreateHelp.vue'),
+  meta: {
+    requiresAuth: true,
+    title: '发布求助'
+  }
+};
+
+// 将专家求助路由添加到路由配置中
+routes.push(helpRoutes);
+routes.push(helpDetailRoute);
+routes.push(helpCreateRoute);
 
 const router = createRouter({
   history: createWebHistory(),
