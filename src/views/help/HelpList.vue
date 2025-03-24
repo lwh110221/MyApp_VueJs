@@ -161,7 +161,10 @@
 
               <div class="mt-3 flex justify-between items-center text-sm text-gray-500">
                 <div class="flex items-center">
-                  <span>{{ post.author_name }}</span>
+                  <router-link :to="`/user/${post.user_id}`" class="flex items-center hover:text-green-600">
+                    <img :src="getUserAvatar(post.author_avatar)" class="w-6 h-6 rounded-full mr-2 object-cover" alt="用户头像" />
+                    <span>{{ post.author_name }}</span>
+                  </router-link>
                   <span class="mx-2">·</span>
                   <span>{{ formatDate(post.created_at) }}</span>
                   <span class="mx-2">·</span>
@@ -385,6 +388,19 @@ export default {
       return `${baseUrl}${path}`;
     };
 
+    // 获取默认头像
+    const getDefaultAvatar = () => {
+      return '/default-avatar.png';
+    };
+
+    // 获取用户头像
+    const getUserAvatar = (profilePicture) => {
+      if (!profilePicture) return '/default-avatar.png';
+      if (profilePicture.startsWith('http')) return profilePicture;
+      const baseUrl = import.meta.env.VITE_BASE_API_URL?.replace('/api', '') || process.env.VUE_APP_API_BASE_URL || 'http://localhost:3000';
+      return `${baseUrl}${profilePicture}`;
+    };
+
     return {
       helpStore,
       searchKeyword,
@@ -399,7 +415,9 @@ export default {
       getPageNumbers,
       getListTitle,
       formatDate,
-      getImageUrl
+      getImageUrl,
+      getDefaultAvatar,
+      getUserAvatar
     };
   }
 };

@@ -135,7 +135,18 @@
 
           <div class="flex items-center justify-between text-sm text-gray-500">
             <div class="flex items-center gap-4">
-              <span>{{ post.author_name }}</span>
+              <router-link
+                :to="`/user/${post.user_id}`"
+                class="flex items-center gap-2 hover:text-blue-500 transition-colors"
+                @click.stop
+              >
+                <img
+                  :src="getUserAvatar(post.author_avatar)"
+                  class="w-7 h-7 rounded-full object-cover"
+                  alt="用户头像"
+                />
+                <span>{{ post.author_name }}</span>
+              </router-link>
               <span>{{ formatDate(post.created_at) }}</span>
             </div>
             <div class="flex items-center gap-4">
@@ -300,9 +311,20 @@ export default {
     // 获取图片完整URL
     const getImageUrl = (path) => {
       if (!path) return '';
-      if (path.startsWith('http')) return path;
+      if (typeof path === 'object' && path.url) {
+        path = path.url;
+      }
+      if (typeof path === 'string' && path.startsWith('http')) return path;
       const baseUrl = import.meta.env.VITE_BASE_API_URL?.replace('/api', '') || process.env.VUE_APP_API_BASE_URL || 'http://localhost:3000';
       return `${baseUrl}${path}`;
+    };
+
+    // 获取用户头像
+    const getUserAvatar = (profilePicture) => {
+      if (!profilePicture) return '/default-avatar.png';
+      if (profilePicture.startsWith('http')) return profilePicture;
+      const baseUrl = import.meta.env.VITE_BASE_API_URL?.replace('/api', '') || process.env.VUE_APP_API_BASE_URL || 'http://localhost:3000';
+      return `${baseUrl}${profilePicture}`;
     };
 
     // 防抖搜索
@@ -371,6 +393,7 @@ export default {
       isLoggedIn,
       formatDate,
       getImageUrl,
+      getUserAvatar,
       debounceSearch,
       selectSort,
       selectTag,

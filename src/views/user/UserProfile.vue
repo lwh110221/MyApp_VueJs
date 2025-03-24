@@ -19,7 +19,11 @@
               <div class="flex items-center">
                 <h2 class="text-2xl font-bold text-gray-800">{{ userProfile.username }}</h2>
                 <!-- 用户身份标识 -->
-                <UserIdentities v-if="userProfile.identities && userProfile.identities.length > 0" :identities="userProfile.identities" class="ml-3" />
+                <UserIdentities
+                  v-if="userProfile.identities && userProfile.identities.length > 0"
+                  :identities="userProfile.identities"
+                  class="ml-3"
+                />
               </div>
               <p v-if="userProfile.bio" class="text-gray-600 mt-1">{{ userProfile.bio }}</p>
               <p class="text-gray-500 text-sm mt-1">注册时间：{{ formatDate(userProfile.created_at) }}</p>
@@ -52,40 +56,47 @@
             </button>
           </div>
         </div>
-      </div>
 
-      <!-- 关注/粉丝信息 -->
-      <UserFollowCard
-        v-if="userProfile && userId"
-        :userId="userId"
-      />
-
-      <!-- 用户动态 -->
-      <div v-if="userProfile" class="mb-6">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-xl font-semibold text-gray-800">用户动态</h3>
+        <!-- 用户积分 -->
+        <div class="mb-6 p-3 bg-blue-50 rounded-lg">
+          <div class="flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-blue-800">用户积分：{{ userProfile.points || 0 }}</h3>
+            <router-link
+              v-if="isCurrentUser"
+              to="/points/history"
+              class="text-blue-600 hover:text-blue-800 text-sm"
+            >
+              积分明细 →
+            </router-link>
+          </div>
         </div>
 
-        <MomentList
-          v-if="userId"
-          :userId="userId"
-          :currentUserId="currentUserId"
-        />
+        <!-- 内容区域 -->
+        <div class="border-t pt-6">
+          <h3 class="text-xl font-semibold mb-4">最近动态</h3>
+          <MomentList :user-id="userId" :key="'moments_' + userId" />
+        </div>
       </div>
 
-      <!-- 用户不存在 -->
-      <div v-else class="text-center py-12">
-        <div class="text-gray-500 text-lg">用户不存在或已被删除</div>
-        <router-link to="/" class="text-blue-500 hover:text-blue-700 mt-4 inline-block">
-          返回首页
-        </router-link>
+      <!-- 用户不存在或已被禁用 -->
+      <div v-else class="bg-white rounded-lg shadow-md p-6 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="mt-4 text-lg font-medium text-gray-900">用户不存在或已被禁用</h3>
+        <p class="mt-1 text-gray-500">该用户可能已被删除或禁用，请返回首页。</p>
+        <div class="mt-6">
+          <router-link to="/" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+            返回首页
+          </router-link>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { useAuthStore } from '../../stores/auth'
@@ -132,6 +143,7 @@ export default {
       try {
         loading.value = true
         await userStore.fetchUserProfile(userId.value)
+        console.log('获取到的用户资料:', userProfile.value)
       } catch (error) {
         console.error('获取用户资料失败:', error)
       } finally {
@@ -146,10 +158,21 @@ export default {
       try {
         followLoading.value = true
         await userStore.followUser(userId.value)
-        // 重新获取用户资料
-        await fetchUserProfile()
+
+        // 手动更新当前用户资料中的关注状态，无需重新获取全部数据
+        if (userProfile.value) {
+          userProfile.value.is_followed = true
+          userProfile.value.follower_count += 1
+        }
       } catch (error) {
-        console.error('关注用户失败:', error)
+        if (error.response && error.response.data && error.response.data.message === '已经关注过该用户') {
+          // 如果已经关注过，强制更新状态为已关注
+          if (userProfile.value) {
+            userProfile.value.is_followed = true
+          }
+        } else {
+          console.error('关注用户失败:', error)
+        }
       } finally {
         followLoading.value = false
       }
@@ -162,8 +185,12 @@ export default {
       try {
         unfollowLoading.value = true
         await userStore.unfollowUser(userId.value)
-        // 重新获取用户资料
-        await fetchUserProfile()
+
+        // 手动更新当前用户资料中的关注状态，无需重新获取全部数据
+        if (userProfile.value) {
+          userProfile.value.is_followed = false
+          userProfile.value.follower_count = Math.max(0, userProfile.value.follower_count - 1)
+        }
       } catch (error) {
         console.error('取消关注失败:', error)
       } finally {
@@ -190,33 +217,23 @@ export default {
       return `${import.meta.env.VITE_BASE_API_URL.replace('/api', '')}${profilePicture}`
     }
 
-    // 监听路由参数变化
-    watch(() => route.params.id, (newId) => {
-      if (newId) {
-        userStore.clearUserProfile()
+    // 监听用户ID变化，重新获取用户资料
+    watchEffect(() => {
+      if (userId.value) {
         fetchUserProfile()
       }
     })
 
-    // 如果是当前用户查看自己的页面，重定向到个人中心
-    watch(isCurrentUser, (value) => {
-      if (value === true) {
-        router.replace('/profile')
-      }
-    }, { immediate: true })
-
-    onMounted(async () => {
-      await authStore.checkAuth()
+    onMounted(() => {
       fetchUserProfile()
     })
 
     return {
       userId,
-      currentUserId,
-      loading,
       userProfile,
       isCurrentUser,
       isLoggedIn,
+      loading,
       followLoading,
       unfollowLoading,
       followUser,
@@ -227,3 +244,7 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+/* 如果有任何样式，可以在这里添加 */
+</style>

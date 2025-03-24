@@ -7,11 +7,12 @@ import { IDENTITY_ENDPOINTS } from '../endpoints'
 class IdentityService {
   /**
    * 获取所有可用的身份类型
-   * @returns {Promise<Array>} 身份类型列表
+   * @returns {Promise<Object>} 包含身份类型列表的响应对象
    */
   async getIdentityTypes() {
     try {
       const response = await http.get(IDENTITY_ENDPOINTS.GET_TYPES)
+      // 确保返回完整响应对象
       return response
     } catch (error) {
       console.error('获取身份类型失败:', error)
@@ -21,11 +22,12 @@ class IdentityService {
 
   /**
    * 获取当前用户的所有身份
-   * @returns {Promise<Array>} 用户身份列表
+   * @returns {Promise<Object>} 包含用户身份列表的响应对象
    */
   async getMyIdentities() {
     try {
       const response = await http.get(IDENTITY_ENDPOINTS.GET_MY_IDENTITIES)
+      // 确保返回完整响应对象
       return response
     } catch (error) {
       console.error('获取用户身份失败:', error)

@@ -19,8 +19,8 @@ export default {
   },
   computed: {
     displayName() {
-      // 尝试从不同的可能的数据结构中获取名称
-      if (this.identity.typeInfo?.name) {
+      // 处理不同的数据结构
+      if (this.identity.typeInfo && this.identity.typeInfo.name) {
         return this.identity.typeInfo.name;
       }
       if (this.identity.type_name) {
@@ -29,12 +29,16 @@ export default {
       if (this.identity.name) {
         return this.identity.name;
       }
-      return '未知身份';
+      // 兜底显示
+      return '身份';
     },
     typeCode() {
-      // 尝试从不同的可能的数据结构中获取类型代码
+      // 处理不同的数据结构
       if (this.identity.identity_type) {
         return this.identity.identity_type;
+      }
+      if (this.identity.typeInfo && this.identity.typeInfo.code) {
+        return this.identity.typeInfo.code;
       }
       if (this.identity.type_code) {
         return this.identity.type_code;
@@ -42,6 +46,7 @@ export default {
       if (this.identity.code) {
         return this.identity.code;
       }
+      // 兜底返回
       return 'UNKNOWN';
     },
     badgeClasses() {
@@ -53,6 +58,8 @@ export default {
           return 'bg-blue-100 text-blue-800';
         case 'DEALER':
           return 'bg-purple-100 text-purple-800';
+        case 'NORMAL':
+          return 'bg-gray-100 text-gray-800';
         default:
           return 'bg-gray-100 text-gray-800';
       }

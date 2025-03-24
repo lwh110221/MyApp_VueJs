@@ -91,10 +91,27 @@ export const useUserStore = defineStore('user', {
       try {
         this.userProfileLoading = true
         const response = await userService.getUserProfile(userId)
-        this.userProfile = response
-        return response
+
+        // 检查响应数据格式
+        if (response && response.data) {
+          this.userProfile = response.data
+
+          // 确保identities字段是数组
+          if (this.userProfile.identities && !Array.isArray(this.userProfile.identities)) {
+            this.userProfile.identities = []
+            console.warn('用户身份数据格式不正确，已重置为空数组')
+          }
+
+          return response.data
+        } else {
+          this.userProfile = null
+          messageService.error('获取用户资料失败：数据格式错误')
+          return null
+        }
       } catch (error) {
+        this.userProfile = null
         messageService.error('获取用户资料失败')
+        console.error('获取用户资料错误:', error)
         throw error
       } finally {
         this.userProfileLoading = false
@@ -107,12 +124,22 @@ export const useUserStore = defineStore('user', {
      */
     async followUser(userId) {
       try {
-        const response = await userService.followUser(userId)
-        messageService.success('关注成功')
-        return response
+        const response = await userService.followUser(userId);
+
+        if (response && response.code === 200) {
+          messageService.success('关注成功');
+          return response;
+        } else {
+          throw new Error(response?.message || '关注失败');
+        }
       } catch (error) {
-        messageService.error('关注失败')
-        throw error
+        // 如果已经关注过该用户，不显示错误消息
+        if (error.response && error.response.data && error.response.data.message === '已经关注过该用户') {
+          console.warn('已经关注过该用户');
+        } else {
+          messageService.error(error.response?.data?.message || '关注失败');
+        }
+        throw error;
       }
     },
 
@@ -122,12 +149,17 @@ export const useUserStore = defineStore('user', {
      */
     async unfollowUser(userId) {
       try {
-        const response = await userService.unfollowUser(userId)
-        messageService.success('已取消关注')
-        return response
+        const response = await userService.unfollowUser(userId);
+
+        if (response && response.code === 200) {
+          messageService.success('已取消关注');
+          return response;
+        } else {
+          throw new Error(response?.message || '取消关注失败');
+        }
       } catch (error) {
-        messageService.error('取消关注失败')
-        throw error
+        messageService.error(error.response?.data?.message || '取消关注失败');
+        throw error;
       }
     },
 

@@ -59,7 +59,17 @@
 
           <div class="flex items-center justify-between mb-6">
             <div class="flex items-center text-sm text-gray-500 gap-3">
-              <span class="font-medium">{{ post.author_name }}</span>
+              <router-link
+                :to="`/user/${post.user_id}`"
+                class="flex items-center hover:text-blue-500 transition-colors"
+              >
+                <img
+                  :src="getUserAvatar(post.author_avatar)"
+                  class="w-8 h-8 rounded-full mr-2 object-cover"
+                  alt="用户头像"
+                />
+                <span class="font-medium">{{ post.author_name }}</span>
+              </router-link>
               <span>{{ formatDate(post.created_at) }}</span>
             </div>
             <div class="flex items-center gap-4 text-sm text-gray-500">
@@ -208,8 +218,18 @@
               class="border-b border-gray-100 pb-6 last:border-0"
             >
               <div class="flex justify-between items-start">
-                <div class="flex items-center gap-3 mb-3">
-                  <div class="font-medium">{{ comment.author_name }}</div>
+                <div class="flex items-center space-x-3 mb-3">
+                  <router-link
+                    :to="`/user/${comment.user_id}`"
+                    class="flex items-center hover:text-blue-500 transition-colors"
+                  >
+                    <img
+                      :src="getUserAvatar(comment.author_avatar)"
+                      class="w-6 h-6 rounded-full mr-2 object-cover"
+                      alt="评论者头像"
+                    />
+                    <div class="font-medium">{{ comment.author_name }}</div>
+                  </router-link>
                   <div class="text-sm text-gray-500">{{ formatDate(comment.created_at) }}</div>
                 </div>
 
@@ -318,9 +338,20 @@ export default {
     const getImageUrl = (path) => {
       console.log("正在处理图片路径:", path);
       if (!path) return '';
-      if (path.startsWith('http')) return path;
+      if (typeof path === 'object' && path.url) {
+        path = path.url;
+      }
+      if (typeof path === 'string' && path.startsWith('http')) return path;
       const baseUrl = import.meta.env.VITE_BASE_API_URL?.replace('/api', '') || process.env.VUE_APP_API_BASE_URL || 'http://localhost:3000';
       return `${baseUrl}${path}`;
+    };
+
+    // 获取用户头像
+    const getUserAvatar = (profilePicture) => {
+      if (!profilePicture) return '/default-avatar.png';
+      if (profilePicture && profilePicture.startsWith('http')) return profilePicture;
+      const baseUrl = import.meta.env.VITE_BASE_API_URL?.replace('/api', '') || process.env.VUE_APP_API_BASE_URL || 'http://localhost:3000';
+      return `${baseUrl}${profilePicture}`;
     };
 
     // 加载帖子详情
@@ -625,6 +656,7 @@ export default {
       authStore,
       formatDate,
       getImageUrl,
+      getUserAvatar,
       toggleLike,
       confirmDelete,
       showImagePreview,

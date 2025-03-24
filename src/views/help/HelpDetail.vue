@@ -30,7 +30,10 @@
 
           <div class="mt-3 flex flex-wrap items-center text-sm text-gray-500">
             <div class="mr-4">
-              <span class="font-medium text-gray-700">{{ helpStore.currentPost.author_name }}</span>
+              <router-link :to="`/user/${helpStore.currentPost.user_id}`" class="flex items-center hover:text-green-600">
+                <img :src="getUserAvatar(helpStore.currentPost.author_avatar)" class="w-8 h-8 rounded-full mr-2 object-cover" alt="用户头像" />
+                <span class="font-medium text-gray-700">{{ helpStore.currentPost.author_name }}</span>
+              </router-link>
             </div>
             <div class="mr-4">
               <span>{{ formatDate(helpStore.currentPost.created_at) }}</span>
@@ -154,9 +157,14 @@
             class="bg-white rounded-lg shadow-md overflow-hidden"
           >
             <div class="px-6 py-3 bg-gray-50 flex justify-between items-center">
-              <div class="flex items-center">
-                <span class="font-medium">{{ answer.author_name }}</span>
-                <span class="mx-2 text-gray-400">·</span>
+              <div class="flex items-center space-x-2 mb-2">
+                <router-link :to="`/user/${answer.expert_id}`" class="flex items-center hover:text-green-600">
+                  <img :src="getUserAvatar(answer.expert_avatar)" class="w-6 h-6 rounded-full mr-2 object-cover" alt="专家头像" />
+                  <span class="font-medium">{{ answer.expert_name }}</span>
+                </router-link>
+                <template v-if="helpStore.currentPost.accepted_answer_id === answer.id">
+                  <span class="text-green-600 bg-green-50 text-xs px-2 py-0.5 rounded-full">已采纳</span>
+                </template>
                 <span class="text-sm text-gray-500">{{ formatDate(answer.created_at) }}</span>
               </div>
               <div class="flex items-center space-x-4">
@@ -557,6 +565,19 @@ export default {
       return `${baseUrl}${path}`;
     };
 
+    // 获取默认头像
+    const getDefaultAvatar = () => {
+      return '/default-avatar.png';
+    };
+
+    // 获取用户头像
+    const getUserAvatar = (profilePicture) => {
+      if (!profilePicture) return '/default-avatar.png';
+      if (profilePicture && profilePicture.startsWith('http')) return profilePicture;
+      const baseUrl = import.meta.env.VITE_BASE_API_URL?.replace('/api', '') || process.env.VUE_APP_API_BASE_URL || 'http://localhost:3000';
+      return `${baseUrl}${profilePicture}`;
+    };
+
     return {
       helpStore,
       identityStore,
@@ -579,7 +600,8 @@ export default {
       prevImage,
       nextImage,
       formatDate,
-      getImageUrl
+      getImageUrl,
+      getUserAvatar
     };
   }
 };
