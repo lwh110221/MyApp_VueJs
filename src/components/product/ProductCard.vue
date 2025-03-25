@@ -65,6 +65,7 @@ export default {
 
     // 获取产品图片
     const productImage = computed(() => {
+      // 确保使用我们增强的getter方法处理可能的各种图片格式
       return productStore.getProductImage(props.product)
     })
 

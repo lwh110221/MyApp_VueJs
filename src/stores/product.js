@@ -26,12 +26,59 @@ export const useProductStore = defineStore('product', {
   getters: {
     // 获取产品图片，处理可能的路径问题
     getProductImage: (state) => (product, index = 0) => {
-      if (!product || !product.images || !product.images.length) {
-        return '/images/default-product.jpg'
+      if (!product) {
+        return '/public/default-avatar.png'
       }
 
-      const image = product.images[index]
-      if (!image) return '/images/default-product.jpg'
+      let images = []
+      try {
+        // 检查product.images是否存在
+        if (!product.images) {
+          return '/public/default-avatar.png'
+        }
+
+        // 处理来自购物车的商品，购物车中通常有product_image字段
+        if (product.product_image) {
+          // 处理product_image为数组的情况
+          if (Array.isArray(product.product_image)) {
+            const img = product.product_image[index] || product.product_image[0];
+            return img.startsWith('http')
+              ? img
+              : `${import.meta.env.VITE_BASE_API_URL.replace('/api', '')}${img}`
+          }
+
+          // 处理字符串情况
+          return product.product_image.startsWith('http')
+            ? product.product_image
+            : `${import.meta.env.VITE_BASE_API_URL.replace('/api', '')}${product.product_image}`
+        }
+
+        if (typeof product.images === 'string') {
+          // 只有在确认是JSON字符串时才解析
+          if (product.images.trim().startsWith('[') || product.images.trim().startsWith('{')) {
+            images = JSON.parse(product.images)
+          } else {
+            // 如果是单个路径字符串，则直接将其作为第一个图片
+            images = [product.images]
+          }
+        } else if (Array.isArray(product.images)) {
+          images = product.images
+        } else {
+          images = []
+        }
+      } catch (e) {
+        console.error('解析图片失败:', e, product)
+        images = []
+      }
+
+      if (!images || images.length === 0) {
+        return '/public/default-avatar.png'
+      }
+
+      const image = images[index] || images[0]
+      if (!image) {
+        return '/public/default-avatar.png'
+      }
 
       if (image.startsWith('http')) {
         return image
@@ -155,6 +202,7 @@ export const useProductStore = defineStore('product', {
         this.loading = true
         const response = await productService.getUserProducts(params)
 
+        // 检查response是否存在且包含data属性
         if (response && response.data) {
           return {
             list: response.data.list || [],
@@ -164,9 +212,10 @@ export const useProductStore = defineStore('product', {
               limit: 10
             }
           }
+        } else {
+          console.error('获取用户产品列表返回格式不正确:', response)
+          return { list: [], pagination: { total: 0, page: 1, limit: 10 } }
         }
-
-        return { list: [], pagination: { total: 0, page: 1, limit: 10 } }
       } catch (error) {
         console.error('获取用户产品列表失败:', error)
         messageService.error('获取您发布的产品失败')

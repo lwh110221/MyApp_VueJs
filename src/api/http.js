@@ -17,9 +17,16 @@ class API {
         config.metadata = { startTime: new Date() }
 
         const token = localStorage.getItem('token')
+        console.log('请求拦截器 - Token:', token ? 'Token存在' : 'Token不存在')
+
         if (token) {
           config.headers.Authorization = `Bearer ${token.trim()}`
+          console.log('请求拦截器 - 添加Authorization头:', `Bearer ${token.trim().substring(0, 10)}...`)
+        } else {
+          console.log('请求拦截器 - 未找到Token')
         }
+
+        console.log('请求拦截器 - 发送请求:', config.method.toUpperCase(), config.url)
         return config
       },
       error => {

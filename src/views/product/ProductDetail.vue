@@ -64,17 +64,17 @@
             <div class="product-meta">
               <div class="meta-item">
                 <span class="meta-label">产地:</span>
-                <span class="meta-value">{{ product.origin }}</span>
-              </div>
-
-              <div v-if="product.harvest_date" class="meta-item">
-                <span class="meta-label">采摘日期:</span>
-                <span class="meta-value">{{ formatDate(product.harvest_date) }}</span>
+                <span class="meta-value">{{ product.location || '未知产地' }}</span>
               </div>
 
               <div class="meta-item">
                 <span class="meta-label">库存:</span>
                 <span class="meta-value">{{ product.stock }} {{ product.unit }}</span>
+              </div>
+
+              <div v-if="product.is_bulk" class="meta-item bulk-order">
+                <span class="meta-label">批量订购:</span>
+                <span class="meta-value">最低起订 {{ product.min_order_quantity }} {{ product.unit }}</span>
               </div>
             </div>
 
@@ -143,6 +143,16 @@
           <div class="description-content">
             {{ product.description }}
           </div>
+
+          <div v-if="productAttributes && Object.keys(productAttributes).length > 0" class="product-attributes">
+            <h3 class="attributes-title">产品属性</h3>
+            <div class="attributes-list">
+              <div v-for="(value, key) in productAttributes" :key="key" class="attribute-item">
+                <span class="attribute-key">{{ key }}:</span>
+                <span class="attribute-value">{{ value }}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- 推荐产品 -->
@@ -206,6 +216,26 @@ export default {
       return getProductImage(product.value, currentImageIndex.value)
     })
 
+    // 获取产品属性
+    const productAttributes = computed(() => {
+      if (!product.value || !product.value.attributes) return null;
+
+      try {
+        // 如果是字符串，尝试解析
+        if (typeof product.value.attributes === 'string') {
+          return JSON.parse(product.value.attributes);
+        }
+        // 如果已经是对象，直接返回
+        else if (typeof product.value.attributes === 'object') {
+          return product.value.attributes;
+        }
+      } catch (e) {
+        console.error('解析产品属性失败:', e);
+      }
+
+      return null;
+    })
+
     // 检查产品是否已在购物车中
     const isInCart = computed(() => {
       if (!product.value) return false
@@ -221,14 +251,6 @@ export default {
     // 格式化价格
     const formatPrice = (price) => {
       return productStore.formatPrice(price)
-    }
-
-    // 格式化日期
-    const formatDate = (dateString) => {
-      if (!dateString) return '未知日期'
-
-      const date = new Date(dateString)
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
     }
 
     // 设置当前图片
@@ -342,9 +364,9 @@ export default {
       relatedProducts,
       isInCart,
       getDiscountPercentage,
+      productAttributes,
       getProductImage,
       formatPrice,
-      formatDate,
       setCurrentImage,
       increaseQuantity,
       decreaseQuantity,
@@ -582,6 +604,13 @@ export default {
   font-weight: 500;
 }
 
+.bulk-order {
+  background-color: #f1f8e9;
+  padding: 5px 10px;
+  border-radius: 4px;
+  border-left: 3px solid #4caf50;
+}
+
 .product-price {
   display: flex;
   align-items: center;
@@ -734,6 +763,44 @@ export default {
   line-height: 1.6;
   color: #444;
   white-space: pre-wrap;
+  margin-bottom: 20px;
+}
+
+.product-attributes {
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.attributes-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.attributes-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.attribute-item {
+  background-color: #f5f5f5;
+  padding: 8px 12px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.attribute-key {
+  font-weight: 500;
+  color: #555;
+  margin-right: 8px;
+}
+
+.attribute-value {
+  color: #333;
 }
 
 .related-products {

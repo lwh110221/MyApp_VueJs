@@ -149,17 +149,6 @@
       </div>
 
       <div class="form-group">
-        <label for="harvest_date">采摘日期 (可选)</label>
-        <input
-          type="date"
-          id="harvest_date"
-          v-model="form.harvest_date"
-          :class="{ 'error': errors.harvest_date }"
-        />
-        <div v-if="errors.harvest_date" class="error-message">{{ errors.harvest_date }}</div>
-      </div>
-
-      <div class="form-group">
         <label for="origin">产地 <span class="required">*</span></label>
         <input
           type="text"
@@ -170,6 +159,74 @@
           :class="{ 'error': errors.origin }"
         />
         <div v-if="errors.origin" class="error-message">{{ errors.origin }}</div>
+      </div>
+
+      <div class="form-group">
+        <label>批发设置</label>
+        <div class="bulk-settings">
+          <div class="checkbox-wrapper">
+            <input
+              type="checkbox"
+              id="is_bulk"
+              v-model="form.is_bulk"
+            />
+            <label for="is_bulk">支持批量订购</label>
+          </div>
+
+          <div v-if="form.is_bulk" class="min-order-quantity">
+            <label for="min_order_quantity">最低起订数量</label>
+            <input
+              type="number"
+              id="min_order_quantity"
+              v-model="form.min_order_quantity"
+              min="1"
+              placeholder="1"
+              :class="{ 'error': errors.min_order_quantity }"
+            />
+            <div v-if="errors.min_order_quantity" class="error-message">{{ errors.min_order_quantity }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>产品属性</label>
+        <div class="attributes-container">
+          <div
+            v-for="(attribute, index) in form.attributes"
+            :key="index"
+            class="attribute-item"
+          >
+            <div class="attribute-row">
+              <input
+                type="text"
+                v-model="attribute.key"
+                placeholder="属性名称"
+                class="attribute-key"
+              />
+              <input
+                type="text"
+                v-model="attribute.value"
+                placeholder="属性值"
+                class="attribute-value"
+              />
+              <button
+                type="button"
+                class="remove-attribute-btn"
+                @click="removeAttribute(index)"
+              >
+                <i class="fa-solid fa-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="add-attribute-btn"
+            @click="addAttribute"
+          >
+            <i class="fa-solid fa-plus"></i> 添加属性
+          </button>
+        </div>
       </div>
 
       <div class="form-button-group">
@@ -218,8 +275,10 @@ export default {
       unit: '',
       description: '',
       images: [],
-      harvest_date: '',
-      origin: ''
+      origin: '',
+      is_bulk: false,
+      min_order_quantity: 1,
+      attributes: []
     })
 
     // 图片预览列表
@@ -244,11 +303,41 @@ export default {
     const loadProductData = () => {
       if (!props.product) return
 
+      // 基本信息
       Object.keys(form).forEach(key => {
-        if (key !== 'images' && props.product[key] !== undefined) {
+        if (key !== 'images' && key !== 'origin' && key !== 'is_bulk' && key !== 'min_order_quantity' && props.product[key] !== undefined) {
           form[key] = props.product[key]
         }
       })
+
+      // 处理产地 (location字段)
+      form.origin = props.product.location || ''
+
+      // 批发设置
+      form.is_bulk = props.product.is_bulk === 1 || props.product.is_bulk === true
+      form.min_order_quantity = props.product.min_order_quantity || 1
+
+      // 处理attributes
+      form.attributes = []
+      if (props.product.attributes) {
+        try {
+          const attrs = typeof props.product.attributes === 'string'
+            ? JSON.parse(props.product.attributes)
+            : props.product.attributes;
+
+          // 将对象转换为键值对数组
+          if (attrs && typeof attrs === 'object') {
+            Object.keys(attrs).forEach(key => {
+              form.attributes.push({
+                key: key,
+                value: attrs[key]
+              });
+            });
+          }
+        } catch (e) {
+          console.error('解析产品属性失败:', e);
+        }
+      }
 
       // 处理图片
       if (props.product.images && props.product.images.length > 0) {
@@ -326,6 +415,16 @@ export default {
       imagePreviewList.value.splice(index, 1)
     }
 
+    // 添加属性
+    const addAttribute = () => {
+      form.attributes.push({ key: '', value: '' })
+    }
+
+    // 移除属性
+    const removeAttribute = (index) => {
+      form.attributes.splice(index, 1)
+    }
+
     // 验证表单
     const validateForm = () => {
       const newErrors = {}
@@ -362,6 +461,11 @@ export default {
         newErrors.origin = '请输入产品产地'
       }
 
+      // 批发设置验证
+      if (form.is_bulk && (!form.min_order_quantity || form.min_order_quantity < 1)) {
+        newErrors.min_order_quantity = '批量订购的最低起订数量必须大于或等于1'
+      }
+
       // 图片验证
       if (!isEditing.value && (!form.images || form.images.length === 0) && imagePreviewList.value.length === 0) {
         newErrors.images = '请至少上传一张产品图片'
@@ -372,51 +476,67 @@ export default {
     }
 
     // 提交表单
-    const submitForm = async () => {
+    const submitForm = () => {
       if (!validateForm()) return
 
-      loading.value = true
-
       try {
-        // 准备表单数据
+        loading.value = true
+
+        // 构建表单数据
         const formData = new FormData()
+        formData.append('name', form.name)
+        formData.append('category_id', form.category_id)
+        formData.append('price', form.price)
+        formData.append('stock', form.stock)
+        formData.append('unit', form.unit)
+        formData.append('description', form.description)
 
-        // 添加基本字段
-        Object.keys(form).forEach(key => {
-          if (key !== 'images') {  // 图片单独处理
-            formData.append(key, form[key])
-          }
-        })
+        // 产地保存到location字段
+        if (form.origin) {
+          formData.append('location', form.origin)
+        }
 
-        // 添加新上传的图片
-        form.images.forEach(image => {
-          formData.append('images[]', image)
-        })
+        if (form.original_price) {
+          formData.append('original_price', form.original_price)
+        }
+
+        // 批发设置
+        formData.append('is_bulk', form.is_bulk ? 1 : 0)
+        if (form.is_bulk) {
+          formData.append('min_order_quantity', form.min_order_quantity)
+        }
 
         // 添加原始图片路径
-        if (originalImages.value.length > 0) {
-          originalImages.value.forEach(image => {
-            formData.append('original_images[]', image)
-          })
+        if (isEditing.value && originalImages.value.length > 0) {
+          formData.append('keepImages', JSON.stringify(originalImages.value))
         }
 
-        let response
-        if (isEditing.value) {
-          // 编辑模式
-          response = await productStore.updateProduct(props.product.id, formData)
+        // 添加新上传的图片文件
+        form.images.forEach(file => {
+          formData.append('images', file)
+        })
+
+        // 处理attributes
+        if (form.attributes && form.attributes.length > 0) {
+          // 过滤掉空的属性
+          const validAttributes = form.attributes.filter(attr =>
+            attr.key.trim() !== '' && attr.value.trim() !== ''
+          );
+
+          // 将数组转换为对象格式
+          if (validAttributes.length > 0) {
+            const attributesObj = {};
+            validAttributes.forEach(attr => {
+              attributesObj[attr.key.trim()] = attr.value.trim();
+            });
+
+            formData.append('attributes', JSON.stringify(attributesObj));
+          }
         } else {
-          // 创建模式
-          response = await productStore.createProduct(formData)
+          formData.append('attributes', JSON.stringify({}));
         }
 
-        emit('submit', response)
-      } catch (error) {
-        console.error('提交产品表单失败:', error)
-
-        // 处理后端返回的验证错误
-        if (error.response && error.response.data && error.response.data.errors) {
-          errors.value = error.response.data.errors
-        }
+        emit('submit', formData)
       } finally {
         loading.value = false
       }
@@ -445,6 +565,8 @@ export default {
       triggerFileInput,
       handleFileChange,
       removeImage,
+      addAttribute,
+      removeAttribute,
       submitForm
     }
   }
@@ -600,6 +722,34 @@ textarea.error {
   margin-top: 5px;
 }
 
+.bulk-settings {
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  padding: 15px;
+}
+
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.checkbox-wrapper input[type="checkbox"] {
+  width: auto;
+}
+
+.min-order-quantity {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #ddd;
+}
+
+.min-order-quantity label {
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+}
+
 .form-button-group {
   display: flex;
   justify-content: flex-end;
@@ -643,5 +793,50 @@ textarea.error {
 .submit-btn:disabled {
   background-color: #a5d6a7;
   cursor: not-allowed;
+}
+
+.attributes-container {
+  width: 100%;
+}
+
+.attribute-item {
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.attribute-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.attribute-key {
+  flex: 1;
+}
+
+.attribute-value {
+  flex: 2;
+}
+
+.remove-attribute-btn {
+  background: none;
+  border: none;
+  color: #ff6b6b;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.add-attribute-btn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.add-attribute-btn:hover {
+  background-color: #388e3c;
 }
 </style>

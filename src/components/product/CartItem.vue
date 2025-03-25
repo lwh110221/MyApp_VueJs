@@ -14,7 +14,7 @@
       <h3 class="cart-item__title" @click="goToProduct">{{ item.name }}</h3>
       <div class="cart-item__meta">
         <span class="cart-item__seller">卖家: {{ item.seller_name }}</span>
-        <span class="cart-item__origin">产地: {{ item.origin }}</span>
+        <span class="cart-item__origin">产地: {{ item.location }}</span>
       </div>
       <div class="cart-item__price">
         <span class="current-price">¥{{ formatPrice(item.price) }}</span>

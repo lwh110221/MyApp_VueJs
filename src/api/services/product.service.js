@@ -74,10 +74,15 @@ class ProductService {
    */
   async getUserProducts(params = {}) {
     try {
-      return await API.get(PRODUCT_ENDPOINTS.GET_USER_PRODUCTS, params)
+      const validParams = {
+        page: parseInt(params.page) || 1,
+        limit: parseInt(params.limit) || 10
+      };
+
+      return await API.get(PRODUCT_ENDPOINTS.GET_USER_PRODUCTS, validParams);
     } catch (error) {
-      console.error('获取用户产品列表失败:', error)
-      throw error
+      console.error('获取用户产品列表失败:', error);
+      throw error;
     }
   }
 
