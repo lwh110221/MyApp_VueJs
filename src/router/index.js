@@ -200,6 +200,112 @@ routes.push(helpRoutes);
 routes.push(helpDetailRoute);
 routes.push(helpCreateRoute);
 
+// 农产品模块路由
+const productListRoute = {
+  path: '/products',
+  name: 'ProductList',
+  component: () => import('@/views/product/ProductList.vue'),
+  meta: {
+    title: '产品列表'
+  }
+};
+
+const productDetailRoute = {
+  path: '/products/:id',
+  name: 'ProductDetail',
+  component: () => import('@/views/product/ProductDetail.vue'),
+  meta: {
+    title: '产品详情'
+  }
+};
+
+const productCreateRoute = {
+  path: '/products/create',
+  name: 'CreateProduct',
+  component: () => import('@/views/product/CreateProduct.vue'),
+  meta: {
+    requiresAuth: true,
+    title: '发布产品'
+  }
+};
+
+const productEditRoute = {
+  path: '/products/edit/:id',
+  name: 'EditProduct',
+  component: () => import('@/views/product/CreateProduct.vue'),
+  meta: {
+    requiresAuth: true,
+    title: '编辑产品'
+  },
+  props: route => ({
+    isEdit: true,
+    productId: parseInt(route.params.id)
+  })
+};
+
+const myProductsRoute = {
+  path: '/my-products',
+  name: 'MyProducts',
+  component: () => import('@/views/product/MyProducts.vue'),
+  meta: {
+    requiresAuth: true,
+    title: '我的产品'
+  }
+};
+
+// 购物车路由
+const cartRoute = {
+  path: '/cart',
+  name: 'Cart',
+  component: () => import('@/views/product/Cart.vue'),
+  meta: {
+    requiresAuth: true,
+    title: '购物车'
+  }
+};
+
+// 订单路由
+const orderListRoute = {
+  path: '/orders',
+  name: 'OrderList',
+  component: () => import('@/views/product/OrderList.vue'),
+  meta: {
+    requiresAuth: true,
+    title: '我的订单'
+  }
+};
+
+const orderDetailRoute = {
+  path: '/orders/:id',
+  name: 'OrderDetail',
+  component: () => import('@/views/product/OrderDetail.vue'),
+  meta: {
+    requiresAuth: true,
+    title: '订单详情'
+  }
+};
+
+const checkoutRoute = {
+  path: '/checkout',
+  name: 'Checkout',
+  component: () => import('@/views/product/Checkout.vue'),
+  meta: {
+    requiresAuth: true,
+    title: '结算'
+  }
+};
+
+// 将农产品相关路由添加到路由配置中
+routes.push(productListRoute);
+routes.push(productCreateRoute);
+routes.push(productEditRoute);
+routes.push(productDetailRoute);
+routes.push(myProductsRoute);
+routes.push(cartRoute);
+routes.push(orderListRoute);
+routes.push(orderDetailRoute);
+routes.push(checkoutRoute);
+
 const router = createRouter({
   history: createWebHistory(),
   routes

@@ -1,4 +1,7 @@
 import { useAuthStore } from './auth'
+import { useProductStore } from './product'
+import { useCartStore } from './cart'
+import { useOrderStore } from './order'
 import { useUserStore } from './user'
 import { useIdentityStore } from './identity'
 import { useMomentStore } from './moment'
@@ -6,6 +9,9 @@ import { useHelpStore } from './help'
 
 export {
   useAuthStore,
+  useProductStore,
+  useCartStore,
+  useOrderStore,
   useUserStore,
   useIdentityStore,
   useMomentStore,

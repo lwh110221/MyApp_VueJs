@@ -39,7 +39,7 @@
             </div>
           </div>
 
-          <div class="relative">
+          <div class="relative" ref="settingsDropdown">
             <button
               @click="showSettings = !showSettings"
               class="text-gray-600 hover:text-gray-800"
@@ -105,6 +105,57 @@
 
       <!-- 用户积分卡片 -->
       <UserPointsCard />
+
+      <!-- 用户订单卡片 -->
+      <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold text-gray-800">我的订单</h3>
+          <router-link
+            to="/orders"
+            class="text-blue-500 hover:text-blue-600 flex items-center"
+          >
+            查看全部
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </router-link>
+        </div>
+        <div class="grid grid-cols-4 gap-4 text-center">
+          <router-link to="/orders?status=0" class="flex flex-col items-center p-3 hover:bg-gray-50 rounded-lg">
+            <div class="text-orange-500 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <span class="text-gray-700">待付款</span>
+          </router-link>
+          <router-link to="/orders?status=1" class="flex flex-col items-center p-3 hover:bg-gray-50 rounded-lg">
+            <div class="text-blue-500 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+            </div>
+            <span class="text-gray-700">待发货</span>
+          </router-link>
+          <router-link to="/orders?status=2" class="flex flex-col items-center p-3 hover:bg-gray-50 rounded-lg">
+            <div class="text-purple-500 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+              </svg>
+            </div>
+            <span class="text-gray-700">待收货</span>
+          </router-link>
+          <router-link to="/orders" class="flex flex-col items-center p-3 hover:bg-gray-50 rounded-lg">
+            <div class="text-gray-500 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <span class="text-gray-700">全部订单</span>
+          </router-link>
+        </div>
+      </div>
 
       <!-- 用户关注/粉丝卡片 -->
       <UserFollowCard
@@ -278,7 +329,7 @@ export default {
       this.isEditing = false
     },
     handleClickOutside(event) {
-      const settingsMenu = this.$el.querySelector('.relative')
+      const settingsMenu = this.$refs.settingsDropdown
       if (settingsMenu && !settingsMenu.contains(event.target)) {
         this.showSettings = false
       }

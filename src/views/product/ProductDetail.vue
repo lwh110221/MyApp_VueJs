@@ -1,0 +1,795 @@
+<template>
+  <div class="product-detail-page">
+    <div class="container">
+      <!-- 加载中状态 -->
+      <div v-if="loading" class="loading-container">
+        <div class="loading-spinner">
+          <i class="fa-solid fa-spinner fa-spin"></i>
+          <span>加载中...</span>
+        </div>
+      </div>
+
+      <!-- 产品未找到 -->
+      <div v-else-if="!product" class="product-not-found">
+        <div class="not-found-icon">
+          <i class="fa-solid fa-circle-exclamation"></i>
+        </div>
+        <h2 class="not-found-title">产品不存在或已下架</h2>
+        <p class="not-found-message">无法找到您请求的产品，可能已被删除或下架</p>
+        <button @click="goBack" class="back-button">
+          <i class="fa-solid fa-arrow-left"></i> 返回列表
+        </button>
+      </div>
+
+      <!-- 产品详情 -->
+      <div v-else class="product-detail">
+        <!-- 面包屑导航 -->
+        <div class="breadcrumb">
+          <router-link to="/products" class="breadcrumb-item">
+            <i class="fa-solid fa-home"></i> 农产品列表
+          </router-link>
+          <span class="breadcrumb-separator">/</span>
+          <span class="breadcrumb-item active">{{ product.name }}</span>
+        </div>
+
+        <div class="product-main">
+          <!-- 产品图片区域 -->
+          <div class="product-images">
+            <div class="main-image">
+              <img :src="currentImage" :alt="product.name" />
+            </div>
+
+            <div v-if="product.images && product.images.length > 1" class="image-thumbnails">
+              <div
+                v-for="(image, index) in product.images"
+                :key="index"
+                class="thumbnail"
+                :class="{ active: currentImageIndex === index }"
+                @click="setCurrentImage(index)"
+              >
+                <img :src="getProductImage(product, index)" :alt="`${product.name} - 图片 ${index + 1}`" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 产品信息区域 -->
+          <div class="product-info">
+            <h1 class="product-name">{{ product.name }}</h1>
+
+            <div class="product-category">
+              <span class="category-label">分类:</span>
+              <span class="category-tag">{{ product.category_name }}</span>
+            </div>
+
+            <div class="product-meta">
+              <div class="meta-item">
+                <span class="meta-label">产地:</span>
+                <span class="meta-value">{{ product.origin }}</span>
+              </div>
+
+              <div v-if="product.harvest_date" class="meta-item">
+                <span class="meta-label">采摘日期:</span>
+                <span class="meta-value">{{ formatDate(product.harvest_date) }}</span>
+              </div>
+
+              <div class="meta-item">
+                <span class="meta-label">库存:</span>
+                <span class="meta-value">{{ product.stock }} {{ product.unit }}</span>
+              </div>
+            </div>
+
+            <div class="product-price">
+              <div class="current-price">¥{{ formatPrice(product.price) }}</div>
+              <div v-if="product.original_price" class="original-price">
+                ¥{{ formatPrice(product.original_price) }}
+              </div>
+              <div v-if="getDiscountPercentage" class="discount-tag">
+                {{ getDiscountPercentage }}% 折扣
+              </div>
+            </div>
+
+            <div class="product-actions">
+              <div class="quantity-control">
+                <button
+                  class="quantity-btn decrease"
+                  @click="decreaseQuantity"
+                  :disabled="quantity <= 1"
+                >
+                  <i class="fa-solid fa-minus"></i>
+                </button>
+                <input
+                  type="number"
+                  v-model.number="quantity"
+                  min="1"
+                  :max="product.stock"
+                  @change="handleQuantityChange"
+                />
+                <button
+                  class="quantity-btn increase"
+                  @click="increaseQuantity"
+                  :disabled="quantity >= product.stock"
+                >
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
+
+              <button
+                @click="addToCart"
+                class="add-to-cart-btn"
+                :disabled="isAddingToCart || isInCart"
+              >
+                <i v-if="isAddingToCart" class="fa-solid fa-spinner fa-spin"></i>
+                <i v-else-if="isInCart" class="fa-solid fa-check"></i>
+                <i v-else class="fa-solid fa-cart-plus"></i>
+                {{ isInCart ? '已加入购物车' : '加入购物车' }}
+              </button>
+            </div>
+
+            <div class="seller-info">
+              <h3 class="seller-title">
+                <i class="fa-solid fa-store"></i> 卖家信息
+              </h3>
+              <div class="seller-name">{{ product.seller_name }}</div>
+              <div v-if="product.seller_phone" class="seller-contact">
+                联系电话: {{ product.seller_phone }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 产品详情描述 -->
+        <div class="product-description">
+          <h2 class="section-title">产品详情</h2>
+          <div class="description-content">
+            {{ product.description }}
+          </div>
+        </div>
+
+        <!-- 推荐产品 -->
+        <div v-if="relatedProducts.length > 0" class="related-products">
+          <h2 class="section-title">相关推荐</h2>
+          <div class="related-product-list">
+            <div
+              v-for="item in relatedProducts"
+              :key="item.id"
+              class="related-product-item"
+            >
+              <ProductCard :product="item" :isInCart="isProductInCart(item.id)" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useProductStore, useCartStore } from '@/stores'
+import ProductCard from '@/components/product/ProductCard.vue'
+
+export default {
+  name: 'ProductDetail',
+
+  components: {
+    ProductCard
+  },
+
+  setup() {
+    const route = useRoute()
+    const router = useRouter()
+    const productStore = useProductStore()
+    const cartStore = useCartStore()
+
+    const loading = ref(true)
+    const product = ref(null)
+    const quantity = ref(1)
+    const isAddingToCart = ref(false)
+    const currentImageIndex = ref(0)
+    const relatedProducts = ref([])
+
+    // 计算折扣百分比
+    const getDiscountPercentage = computed(() => {
+      if (!product.value || !product.value.original_price) return null
+
+      const discount = 100 - (product.value.price / product.value.original_price * 100)
+      return Math.round(discount)
+    })
+
+    // 获取当前显示的图片
+    const currentImage = computed(() => {
+      if (!product.value || !product.value.images || !product.value.images.length) {
+        return '/images/default-product.jpg'
+      }
+
+      return getProductImage(product.value, currentImageIndex.value)
+    })
+
+    // 检查产品是否已在购物车中
+    const isInCart = computed(() => {
+      if (!product.value) return false
+
+      return cartStore.cartItems.some(item => item.product_id === product.value.id)
+    })
+
+    // 获取产品图片
+    const getProductImage = (product, index = 0) => {
+      return productStore.getProductImage(product, index)
+    }
+
+    // 格式化价格
+    const formatPrice = (price) => {
+      return productStore.formatPrice(price)
+    }
+
+    // 格式化日期
+    const formatDate = (dateString) => {
+      if (!dateString) return '未知日期'
+
+      const date = new Date(dateString)
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    }
+
+    // 设置当前图片
+    const setCurrentImage = (index) => {
+      currentImageIndex.value = index
+    }
+
+    // 增加数量
+    const increaseQuantity = () => {
+      if (quantity.value < product.value.stock) {
+        quantity.value += 1
+      }
+    }
+
+    // 减少数量
+    const decreaseQuantity = () => {
+      if (quantity.value > 1) {
+        quantity.value -= 1
+      }
+    }
+
+    // 处理数量变化
+    const handleQuantityChange = () => {
+      if (!quantity.value || quantity.value < 1) {
+        quantity.value = 1
+      } else if (quantity.value > product.value.stock) {
+        quantity.value = product.value.stock
+      }
+    }
+
+    // 添加到购物车
+    const addToCart = async () => {
+      if (isAddingToCart.value || isInCart.value) return
+
+      isAddingToCart.value = true
+      try {
+        await cartStore.addToCart(product.value.id, quantity.value)
+      } finally {
+        isAddingToCart.value = false
+      }
+    }
+
+    // 检查产品是否在购物车中
+    const isProductInCart = (productId) => {
+      return cartStore.cartItems.some(item => item.product_id === productId)
+    }
+
+    // 返回上一页
+    const goBack = () => {
+      router.push('/products')
+    }
+
+    // 获取产品详情
+    const fetchProductDetails = async () => {
+      loading.value = true
+
+      try {
+        const productId = route.params.id
+        const fetchedProduct = await productStore.fetchProductById(productId)
+
+        if (fetchedProduct) {
+          product.value = fetchedProduct
+
+          // 获取相关产品（同类别的其他产品）
+          if (product.value.category_id) {
+            await fetchRelatedProducts(product.value.category_id, product.value.id)
+          }
+        }
+      } catch (error) {
+        console.error('获取产品详情失败:', error)
+      } finally {
+        loading.value = false
+      }
+    }
+
+    // 获取相关产品
+    const fetchRelatedProducts = async (categoryId, currentProductId) => {
+      try {
+        const params = {
+          category_id: categoryId,
+          limit: 4
+        }
+
+        await productStore.fetchProducts(params)
+
+        // 过滤掉当前产品
+        relatedProducts.value = productStore.products.filter(p => p.id !== currentProductId)
+      } catch (error) {
+        console.error('获取相关产品失败:', error)
+      }
+    }
+
+    // 组件挂载时
+    onMounted(async () => {
+      // 获取购物车数据（如果还未获取）
+      if (cartStore.cartItems.length === 0) {
+        await cartStore.fetchCart()
+      }
+
+      // 获取产品详情
+      await fetchProductDetails()
+    })
+
+    return {
+      loading,
+      product,
+      quantity,
+      isAddingToCart,
+      currentImageIndex,
+      currentImage,
+      relatedProducts,
+      isInCart,
+      getDiscountPercentage,
+      getProductImage,
+      formatPrice,
+      formatDate,
+      setCurrentImage,
+      increaseQuantity,
+      decreaseQuantity,
+      handleQuantityChange,
+      addToCart,
+      isProductInCart,
+      goBack
+    }
+  }
+}
+</script>
+
+<style scoped>
+.product-detail-page {
+  padding: 40px 0;
+  min-height: calc(100vh - 60px);
+  background-color: #f9f9f9;
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 400px;
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  color: #666;
+}
+
+.loading-spinner i {
+  font-size: 2rem;
+  color: #4caf50;
+}
+
+.product-not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.not-found-icon {
+  font-size: 4rem;
+  color: #ff6b6b;
+  margin-bottom: 20px;
+}
+
+.not-found-title {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.not-found-message {
+  color: #666;
+  margin-bottom: 30px;
+}
+
+.back-button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.3s;
+}
+
+.back-button:hover {
+  background-color: #388e3c;
+}
+
+.product-detail {
+  margin-bottom: 40px;
+}
+
+.breadcrumb {
+  background-color: white;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb-item {
+  color: #666;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.breadcrumb-item:hover {
+  color: #4caf50;
+}
+
+.breadcrumb-item.active {
+  color: #333;
+  font-weight: 500;
+}
+
+.breadcrumb-separator {
+  margin: 0 10px;
+  color: #ccc;
+}
+
+.product-main {
+  display: flex;
+  gap: 30px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  margin-bottom: 30px;
+}
+
+.product-images {
+  width: 50%;
+}
+
+.main-image {
+  width: 100%;
+  height: 400px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 15px;
+}
+
+.main-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-thumbnails {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.thumbnail {
+  width: 80px;
+  height: 80px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.thumbnail:hover {
+  border-color: #ddd;
+}
+
+.thumbnail.active {
+  border-color: #4caf50;
+}
+
+.thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-name {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.product-category {
+  margin-bottom: 20px;
+}
+
+.category-label {
+  color: #666;
+  margin-right: 10px;
+}
+
+.category-tag {
+  background-color: #e8f5e9;
+  color: #388e3c;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+}
+
+.product-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.meta-label {
+  color: #666;
+}
+
+.meta-value {
+  color: #333;
+  font-weight: 500;
+}
+
+.product-price {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.current-price {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ff6b6b;
+}
+
+.original-price {
+  font-size: 1.2rem;
+  color: #999;
+  text-decoration: line-through;
+}
+
+.discount-tag {
+  background-color: #ff6b6b;
+  color: white;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.product-actions {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.quantity-control {
+  display: flex;
+  align-items: center;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.quantity-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #555;
+  transition: all 0.3s;
+}
+
+.quantity-btn:hover:not(:disabled) {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.quantity-btn:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.quantity-control input {
+  width: 60px;
+  height: 40px;
+  border: none;
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.quantity-control input:focus {
+  outline: none;
+}
+
+.add-to-cart-btn {
+  flex: 1;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.add-to-cart-btn:hover:not(:disabled) {
+  background-color: #388e3c;
+}
+
+.add-to-cart-btn:disabled {
+  background-color: #a5d6a7;
+  cursor: not-allowed;
+}
+
+.seller-info {
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.seller-title {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #333;
+}
+
+.seller-name {
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+.seller-contact {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.product-description {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  margin-bottom: 30px;
+}
+
+.section-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.description-content {
+  line-height: 1.6;
+  color: #444;
+  white-space: pre-wrap;
+}
+
+.related-products {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+}
+
+.related-product-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.related-product-item {
+  height: 100%;
+}
+
+@media (max-width: 992px) {
+  .product-main {
+    flex-direction: column;
+  }
+
+  .product-images {
+    width: 100%;
+  }
+
+  .related-product-list {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .product-detail-page {
+    padding: 20px 0;
+  }
+
+  .product-main {
+    padding: 20px;
+  }
+
+  .main-image {
+    height: 300px;
+  }
+
+  .product-name {
+    font-size: 1.5rem;
+  }
+
+  .current-price {
+    font-size: 1.5rem;
+  }
+
+  .related-product-list {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
+</style>

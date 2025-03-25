@@ -53,6 +53,39 @@ export const LOGGER_ENDPOINTS = {
   LOG_ERROR: '/log/error'
 }
 
+// 产品相关接口
+export const PRODUCT_ENDPOINTS = {
+  GET_CATEGORIES: '/products/categories',
+  GET_PRODUCTS: '/products',
+  GET_PRODUCT_DETAIL: (id) => `/products/${id}`,
+  GET_FEATURED_PRODUCTS: '/products/featured',
+  GET_USER_PRODUCTS: '/products/user',
+  CREATE_PRODUCT: '/products',
+  UPDATE_PRODUCT: (id) => `/products/${id}`,
+  DELETE_PRODUCT: (id) => `/products/${id}`
+}
+
+// 购物车相关接口
+export const CART_ENDPOINTS = {
+  GET_CART: '/cart',
+  ADD_TO_CART: '/cart/items',
+  UPDATE_CART_ITEM: (itemId) => `/cart/items/${itemId}`,
+  DELETE_CART_ITEM: (itemId) => `/cart/items/${itemId}`,
+  UPDATE_SELECTED: '/cart/selected',
+  CLEAR_CART: '/cart'
+}
+
+// 订单相关接口
+export const ORDER_ENDPOINTS = {
+  GET_ORDERS: '/orders',
+  GET_ORDER_DETAIL: (orderId) => `/orders/${orderId}`,
+  CREATE_ORDER: '/orders',
+  CANCEL_ORDER: (orderId) => `/orders/${orderId}/cancel`,
+  CONFIRM_ORDER: (orderId) => `/orders/${orderId}/confirm`,
+  PAY_ORDER: (orderId) => `/orders/${orderId}/pay`,
+  GET_ORDER_STATS: '/orders/stats'
+}
+
 // API 版本
 export const API_VERSION = 'v1'
 
@@ -63,5 +96,8 @@ export const ENDPOINTS = {
   IDENTITY: IDENTITY_ENDPOINTS,
   MOMENT: MOMENT_ENDPOINTS,
   HELP: HELP_ENDPOINTS,
-  LOGGER: LOGGER_ENDPOINTS
+  LOGGER: LOGGER_ENDPOINTS,
+  PRODUCT: PRODUCT_ENDPOINTS,
+  CART: CART_ENDPOINTS,
+  ORDER: ORDER_ENDPOINTS
 }

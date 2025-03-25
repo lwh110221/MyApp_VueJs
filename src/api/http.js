@@ -46,6 +46,7 @@ class API {
           return response.data || { message: '操作成功' }
         }
 
+        // 直接返回响应数据，不再解析data字段
         return response.data
       },
       async error => {

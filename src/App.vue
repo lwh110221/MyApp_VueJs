@@ -13,14 +13,22 @@
             <!-- 主导航链接 - 桌面端 -->
             <div class="hidden md:flex space-x-4 mr-4">
               <router-link to="/" class="text-gray-600 hover:text-gray-800">首页</router-link>
+              <router-link to="/products" class="text-gray-600 hover:text-gray-800">农产品</router-link>
               <router-link to="/news" class="text-gray-600 hover:text-gray-800">新闻</router-link>
               <router-link to="/community" class="text-gray-600 hover:text-gray-800">社区</router-link>
               <router-link to="/help" class="text-gray-600 hover:text-gray-800">专家求助</router-link>
             </div>
 
+            <!-- 购物车图标 -->
+            <router-link v-if="authStore.isLoggedIn" to="/cart" class="text-gray-600 hover:text-gray-800 relative">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </router-link>
+
             <!-- 移动端菜单按钮 -->
             <button
-              @click="toggleMobileMenu"
+              @click="toggleMobileMenu($event)"
               class="md:hidden text-gray-600 focus:outline-none"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -45,9 +53,9 @@
             </template>
 
             <!-- 用户头像下拉菜单 -->
-            <div v-else class="relative">
+            <div v-else class="relative" ref="userDropdown">
               <button
-                @click="toggleDropdown"
+                @click="toggleDropdown($event)"
                 class="flex items-center space-x-2 focus:outline-none"
               >
                 <img
@@ -84,6 +92,20 @@
                   个人中心
                 </router-link>
                 <router-link
+                  to="/orders"
+                  class="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  @click="showDropdown = false"
+                >
+                  我的订单
+                </router-link>
+                <router-link
+                  to="/cart"
+                  class="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  @click="showDropdown = false"
+                >
+                  购物车
+                </router-link>
+                <router-link
                   to="/change-password"
                   class="block px-4 py-2 text-gray-700 hover:bg-gray-100"
                   @click="showDropdown = false"
@@ -110,9 +132,16 @@
     <div v-if="showMobileMenu" class="md:hidden bg-white shadow-lg rounded-lg absolute top-16 right-0 left-0 z-50">
       <div class="flex flex-col p-4 space-y-3">
         <router-link to="/" class="text-gray-600 hover:text-gray-800 py-2" @click="showMobileMenu = false">首页</router-link>
+        <router-link to="/products" class="text-gray-600 hover:text-gray-800 py-2" @click="showMobileMenu = false">农产品</router-link>
         <router-link to="/news" class="text-gray-600 hover:text-gray-800 py-2" @click="showMobileMenu = false">新闻</router-link>
         <router-link to="/community" class="text-gray-600 hover:text-gray-800 py-2" @click="showMobileMenu = false">社区</router-link>
         <router-link to="/help" class="text-gray-600 hover:text-gray-800 py-2" @click="showMobileMenu = false">专家求助</router-link>
+        <router-link v-if="authStore.isLoggedIn" to="/cart" class="text-gray-600 hover:text-gray-800 py-2 flex items-center" @click="showMobileMenu = false">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          购物车
+        </router-link>
       </div>
     </div>
   </div>
@@ -146,11 +175,15 @@ export default {
     document.removeEventListener('click', this.handleClickOutside)
   },
   methods: {
-    toggleDropdown() {
+    toggleDropdown(event) {
+      // 阻止事件冒泡，避免立即触发handleClickOutside
+      if (event) {
+        event.stopPropagation();
+      }
       this.showDropdown = !this.showDropdown
     },
     handleClickOutside(event) {
-      const dropdown = this.$el.querySelector('.relative')
+      const dropdown = this.$refs.userDropdown
       if (dropdown && !dropdown.contains(event.target)) {
         this.showDropdown = false
       }
@@ -159,7 +192,11 @@ export default {
       this.showDropdown = false
       this.authStore.logout()
     },
-    toggleMobileMenu() {
+    toggleMobileMenu(event) {
+      // 阻止事件冒泡
+      if (event) {
+        event.stopPropagation();
+      }
       this.showMobileMenu = !this.showMobileMenu
     }
   }
