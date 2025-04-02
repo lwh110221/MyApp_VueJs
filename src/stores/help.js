@@ -70,8 +70,8 @@ export const useHelpStore = defineStore('help', {
     // 获取帖子状态描述
     getPostStatusText: () => (status) => {
       const statusMap = {
-        0: '待解决',
-        1: '已解决',
+        0: '已关闭',
+        1: '开放中',
         2: '已关闭'
       };
       return statusMap[status] || '未知状态';
@@ -80,7 +80,7 @@ export const useHelpStore = defineStore('help', {
     // 获取帖子状态类名
     getPostStatusClass: () => (status) => {
       const classMap = {
-        0: 'bg-yellow-100 text-yellow-800',
+        0: 'bg-gray-100 text-gray-800',
         1: 'bg-green-100 text-green-800',
         2: 'bg-gray-100 text-gray-800'
       };
@@ -194,7 +194,7 @@ export const useHelpStore = defineStore('help', {
         this.error = null;
 
         const response = await helpService.getAnswerList(postId);
-        this.answers = response?.data || [];
+        this.answers = response?.data?.items || [];
 
         return this.answers;
       } catch (error) {
@@ -273,6 +273,15 @@ export const useHelpStore = defineStore('help', {
 
         // 刷新回答列表
         await this.fetchAnswers(postId);
+
+        // 更新帖子列表中的回答数量
+        if (Array.isArray(this.posts)) {
+          const postIndex = this.posts.findIndex(post => post.id === postId);
+          if (postIndex !== -1) {
+            const post = this.posts[postIndex];
+            post.answer_count = (post.answer_count || 0) + 1;
+          }
+        }
 
         return response?.data;
       } catch (error) {

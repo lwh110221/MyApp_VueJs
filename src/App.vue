@@ -26,6 +26,16 @@
               </svg>
             </router-link>
 
+            <!-- 消息图标 -->
+            <router-link v-if="authStore.isLoggedIn" to="/chat" class="text-gray-600 hover:text-gray-800 relative">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <span v-if="chatStore.unreadCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {{ chatStore.unreadCount > 99 ? '99+' : chatStore.unreadCount }}
+              </span>
+            </router-link>
+
             <!-- 移动端菜单按钮 -->
             <button
               @click="toggleMobileMenu($event)"
@@ -106,6 +116,18 @@
                   购物车
                 </router-link>
                 <router-link
+                  to="/chat"
+                  class="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  @click="showDropdown = false"
+                >
+                  <div class="flex items-center justify-between">
+                    <span>我的消息</span>
+                    <span v-if="chatStore.unreadCount > 0" class="bg-red-500 text-white text-xs rounded-full px-1.5 ml-2">
+                      {{ chatStore.unreadCount > 99 ? '99+' : chatStore.unreadCount }}
+                    </span>
+                  </div>
+                </router-link>
+                <router-link
                   to="/change-password"
                   class="block px-4 py-2 text-gray-700 hover:bg-gray-100"
                   @click="showDropdown = false"
@@ -142,6 +164,15 @@
           </svg>
           购物车
         </router-link>
+        <router-link v-if="authStore.isLoggedIn" to="/chat" class="text-gray-600 hover:text-gray-800 py-2 flex items-center" @click="showMobileMenu = false">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+          消息
+          <span v-if="chatStore.unreadCount > 0" class="ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">
+            {{ chatStore.unreadCount > 99 ? '99+' : chatStore.unreadCount }}
+          </span>
+        </router-link>
       </div>
     </div>
   </div>
@@ -149,17 +180,51 @@
 
 <script>
 import { useAuthStore } from './stores/auth'
+import { useChatStore } from './stores/chat'
+import { onMounted, onBeforeUnmount } from 'vue'
 
 export default {
   name: 'App',
   setup() {
     const authStore = useAuthStore()
+    const chatStore = useChatStore()
 
     // 组件挂载时检查认证状态
     authStore.checkAuth()
 
+    // 组件挂载时初始化聊天相关
+    onMounted(() => {
+      if (authStore.isLoggedIn) {
+        console.log('初始化聊天WebSocket连接')
+        // 初始化WebSocket连接
+        const cleanupSocket = chatStore.initSocketConnection()
+
+        // 获取未读消息数量
+        chatStore.fetchUnreadCount()
+
+        // 定时获取未读消息数量
+        const intervalId = setInterval(() => {
+          if (authStore.isLoggedIn) {
+            chatStore.fetchUnreadCount()
+          }
+        }, 60000) // 每60秒查询一次
+
+        // 在组件销毁时清除计时器和WebSocket连接
+        onBeforeUnmount(() => {
+          console.log('清理App.vue中的计时器和WebSocket连接')
+          clearInterval(intervalId)
+
+          // 使用返回的清理函数断开WebSocket连接
+          if (typeof cleanupSocket === 'function') {
+            cleanupSocket()
+          }
+        })
+      }
+    })
+
     return {
-      authStore
+      authStore,
+      chatStore
     }
   },
   data() {

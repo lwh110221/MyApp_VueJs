@@ -8,6 +8,7 @@ import helpService from './services/help.service'
 import productService from './services/product.service'
 import cartService from './services/cart.service'
 import orderService from './services/order.service'
+import chatService from './services/chat.service'
 
 // 导出服务
 export {
@@ -20,7 +21,8 @@ export {
   helpService,
   productService,
   cartService,
-  orderService
+  orderService,
+  chatService
 }
 
 // 导出基础 API 实例，以便在特殊情况下直接使用

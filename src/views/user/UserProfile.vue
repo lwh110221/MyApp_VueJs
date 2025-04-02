@@ -41,7 +41,7 @@
             <button
               v-if="isLoggedIn && !isCurrentUser && !userProfile.is_followed"
               @click="followUser"
-              class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+              class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 mr-2"
               :disabled="followLoading"
             >
               {{ followLoading ? '处理中...' : '关注' }}
@@ -49,10 +49,19 @@
             <button
               v-if="isLoggedIn && !isCurrentUser && userProfile.is_followed"
               @click="unfollowUser"
-              class="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50"
+              class="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 mr-2"
               :disabled="unfollowLoading"
             >
               {{ unfollowLoading ? '处理中...' : '已关注' }}
+            </button>
+
+            <!-- 发送消息按钮 -->
+            <button
+              v-if="isLoggedIn && !isCurrentUser"
+              @click="redirectToChat"
+              class="border border-blue-300 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50"
+            >
+              <i class="fas fa-comment mr-1"></i> 发送消息
             </button>
           </div>
         </div>
@@ -98,13 +107,83 @@
         </div>
       </div>
     </div>
+
+    <!-- 聊天模态框 -->
+    <div v-if="showChatModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+        <!-- 模态框头部 -->
+        <div class="flex justify-between items-center border-b px-6 py-4">
+          <h3 class="text-lg font-semibold">发送消息给 {{ userProfile.username }}</h3>
+          <button @click="closeChatModal" class="text-gray-500 hover:text-gray-700">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- 聊天消息列表 -->
+        <div class="px-6 py-4 h-64 overflow-y-auto" ref="chatHistory">
+          <div v-if="chatStore.loading" class="flex justify-center items-center h-full">
+            <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+          <div v-else-if="chatStore.chatHistory.length === 0" class="text-center text-gray-500 py-10">
+            还没有聊天记录，发送一条消息开始对话吧
+          </div>
+          <div v-else>
+            <div v-for="(message, index) in sortedChatHistory" :key="index" class="mb-4">
+              <div class="flex" :class="message.sender_id === currentUserId ? 'justify-end' : 'justify-start'">
+                <div
+                  class="max-w-xs rounded-lg px-4 py-2"
+                  :class="message.sender_id === currentUserId
+                    ? 'bg-blue-500 text-white rounded-br-none'
+                    : 'bg-gray-200 text-gray-800 rounded-bl-none'"
+                >
+                  <p>{{ message.content }}</p>
+                  <div
+                    class="text-xs mt-1"
+                    :class="message.sender_id === currentUserId ? 'text-blue-100' : 'text-gray-500'"
+                  >
+                    {{ formatMessageTime(message.send_time) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 输入区域 -->
+        <div class="border-t px-6 py-4">
+          <div class="flex">
+            <input
+              v-model="messageContent"
+              type="text"
+              placeholder="输入消息..."
+              class="flex-1 border rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              @keyup.enter="sendMessage"
+              :disabled="chatStore.loading"
+            />
+            <button
+              @click="sendMessage"
+              class="bg-blue-500 text-white px-4 py-2 rounded-r-lg hover:bg-blue-600"
+              :disabled="!messageContent.trim() || chatStore.loading"
+            >
+              发送
+            </button>
+          </div>
+          <p v-if="messageError" class="text-red-500 text-sm mt-2">{{ messageError }}</p>
+          <p v-if="!chatStore.isPartnerReplied && chatStore.chatHistory.length > 0" class="text-orange-500 text-sm mt-2">
+            对方尚未回复，暂时只能发送一条消息
+          </p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted, watchEffect } from 'vue'
+import { ref, computed, onMounted, watchEffect, watch, nextTick, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useUserStore } from '../../stores/user'
+import { useUserStore, useChatStore } from '../../stores'
 import { useAuthStore } from '../../stores/auth'
 import MomentList from '../../components/MomentList.vue'
 import UserFollowCard from '../../components/UserFollowCard.vue'
@@ -122,10 +201,15 @@ export default {
     const router = useRouter()
     const userStore = useUserStore()
     const authStore = useAuthStore()
+    const chatStore = useChatStore()
 
     const loading = ref(true)
     const followLoading = ref(false)
     const unfollowLoading = ref(false)
+    const showChatModal = ref(false)
+    const messageContent = ref('')
+    const messageError = ref('')
+    const chatHistory = ref(null)
 
     // 获取路由参数中的用户ID
     const userId = computed(() => route.params.id)
@@ -204,6 +288,88 @@ export default {
       }
     }
 
+    // 打开聊天模态框
+    const openChatModal = async () => {
+      if (!userProfile.value) return
+
+      try {
+        console.log('打开聊天模态框，初始化聊天会话')
+        // 初始化 socket 连接
+        chatStore.initSocketConnection()
+
+        // 初始化聊天会话
+        await chatStore.initChatSession(
+          userId.value,
+          userProfile.value.username,
+          userProfile.value.profile_picture
+        )
+
+        showChatModal.value = true
+
+        // 滚动到最新消息
+        await nextTick()
+        scrollToBottom()
+      } catch (error) {
+        console.error('初始化聊天失败:', error)
+      }
+    }
+
+    // 关闭聊天模态框
+    const closeChatModal = () => {
+      console.log('关闭聊天模态框')
+      showChatModal.value = false
+    }
+
+    // 发送消息
+    const sendMessage = async () => {
+      if (!messageContent.value.trim() || chatStore.loading) return
+
+      // 清除之前的错误
+      messageError.value = ''
+
+      try {
+        const response = await chatStore.sendMessage(messageContent.value)
+
+        // 如果是发送失败（对方未回复且不是第一条消息）
+        if (response && response.error) {
+          messageError.value = response.message
+          return
+        }
+
+        // 发送成功，清空输入框
+        messageContent.value = ''
+
+        // 滚动到最新消息
+        await nextTick()
+        scrollToBottom()
+      } catch (error) {
+        messageError.value = error.message || '发送消息失败，请稍后再试'
+        console.error('发送消息失败:', error)
+      }
+    }
+
+    // 滚动到聊天记录底部
+    const scrollToBottom = () => {
+      if (chatHistory.value) {
+        chatHistory.value.scrollTop = chatHistory.value.scrollHeight
+      }
+    }
+
+    // 格式化消息时间
+    const formatMessageTime = (time) => {
+      if (!time) return ''
+
+      const date = new Date(time)
+      const now = new Date()
+      const isToday = date.toDateString() === now.toDateString()
+
+      if (isToday) {
+        return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+      } else {
+        return date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+      }
+    }
+
     // 格式化日期
     const formatDate = (date) => {
       if (!date) return ''
@@ -223,11 +389,27 @@ export default {
       return `${import.meta.env.VITE_BASE_API_URL.replace('/api', '')}${profilePicture}`
     }
 
+    // 监听聊天历史变化，自动滚动到底部
+    watch(() => chatStore.chatHistory, () => {
+      nextTick(() => scrollToBottom())
+    }, { deep: true })
+
     // 监听用户ID变化，重新获取用户资料
     watchEffect(() => {
       if (userId.value) {
         fetchUserProfile()
       }
+    })
+
+    // 组件卸载时清理
+    onUnmounted(() => {
+      console.log('UserProfile组件卸载，清理聊天会话')
+      // 如果聊天模态框是打开的，关闭它
+      if (showChatModal.value) {
+        closeChatModal()
+      }
+      // 清理当前会话
+      chatStore.clearCurrentSession()
     })
 
     // 在组件挂载时记录一下用户资料信息
@@ -240,6 +422,31 @@ export default {
         })
     })
 
+    // 获取排序后的聊天历史
+    const sortedChatHistory = computed(() => {
+      if (!chatStore.chatHistory) return []
+      return [...chatStore.chatHistory].sort((a, b) => new Date(a.send_time) - new Date(b.send_time))
+    })
+
+    // 重定向到聊天页面
+    const redirectToChat = () => {
+      if (!userProfile.value) return
+
+      console.log('重定向到聊天页面，用户ID:', userId.value)
+
+      // 确保使用数值类型的用户ID
+      const partnerIdNum = Number(userId.value)
+
+      router.push({
+        name: 'ChatWithUser',
+        params: { partnerId: partnerIdNum.toString() },
+        query: {
+          partnerName: userProfile.value.username,
+          partnerAvatar: userProfile.value.profile_picture
+        }
+      })
+    }
+
     return {
       userId,
       userProfile,
@@ -251,7 +458,21 @@ export default {
       followUser,
       unfollowUser,
       formatDate,
-      getUserAvatar
+      getUserAvatar,
+      currentUserId,
+
+      // 聊天相关
+      showChatModal,
+      messageContent,
+      messageError,
+      chatHistory,
+      chatStore,
+      openChatModal,
+      closeChatModal,
+      sendMessage,
+      formatMessageTime,
+      sortedChatHistory,
+      redirectToChat
     }
   }
 }

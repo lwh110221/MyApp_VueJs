@@ -20,12 +20,6 @@
         <div class="p-6 border-b">
           <div class="flex flex-wrap justify-between items-center gap-3">
             <h1 class="text-2xl font-semibold text-gray-800">{{ helpStore.currentPost.title }}</h1>
-            <span
-              class="px-2.5 py-1 rounded-full text-sm font-medium"
-              :class="helpStore.getPostStatusClass(helpStore.currentPost.status)"
-            >
-              {{ helpStore.getPostStatusText(helpStore.currentPost.status) }}
-            </span>
           </div>
 
           <div class="mt-3 flex flex-wrap items-center text-sm text-gray-500">
@@ -70,7 +64,7 @@
           <h2 class="text-lg font-medium text-gray-700">帖子操作</h2>
           <div class="flex space-x-2">
             <button
-              v-if="helpStore.currentPost.status === 0"
+              v-if="helpStore.currentPost.status === 1"
               @click="updatePostStatus(2)"
               class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded"
               :disabled="isUpdatingStatus"
@@ -78,12 +72,12 @@
               关闭帖子
             </button>
             <button
-              v-if="helpStore.currentPost.status === 2"
-              @click="updatePostStatus(0)"
+              v-if="helpStore.currentPost.status === 0 || helpStore.currentPost.status === 2"
+              @click="updatePostStatus(1)"
               class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded"
               :disabled="isUpdatingStatus"
             >
-              重新打开帖子
+              {{ helpStore.currentPost.status === 0 ? '恢复帖子' : '重新打开帖子' }}
             </button>
           </div>
         </div>
@@ -169,7 +163,7 @@
               </div>
               <div class="flex items-center space-x-4">
                 <button
-                  v-if="isAuthor && helpStore.currentPost.status === 0"
+                  v-if="isAuthor && helpStore.currentPost.status === 1"
                   @click="acceptAnswer(answer.id)"
                   class="text-green-500 hover:text-green-700 text-sm"
                   :disabled="helpStore.loading.acceptAnswer"
@@ -208,7 +202,7 @@
       </div>
 
       <!-- 回答表单 (只有专家可以回答) -->
-      <div v-if="isExpert && helpStore.currentPost.status === 0" class="bg-white rounded-lg shadow-md overflow-hidden">
+      <div v-if="isExpert && helpStore.currentPost.status === 1" class="bg-white rounded-lg shadow-md overflow-hidden">
         <div class="px-6 py-3 bg-gray-50 border-b">
           <h3 class="text-lg font-medium">您的专业回答</h3>
         </div>
@@ -377,9 +371,18 @@ export default {
 
     // 初始化
     onMounted(async () => {
-      if (!identityStore.userIdentities) {
+      if (!identityStore.userIdentities || identityStore.userIdentities.length === 0) {
+        // 获取身份类型
+        await identityStore.fetchIdentityTypes();
+        // 获取用户身份
         await identityStore.fetchUserIdentities();
       }
+
+      // 添加调试输出
+      console.log('身份类型列表:', identityStore.identityTypes);
+      console.log('用户身份信息:', identityStore.userIdentities);
+      console.log('是否是专家:', isExpert.value);
+      console.log('帖子状态:', helpStore.currentPost?.status);
 
       await loadPostDetail();
     });
@@ -423,6 +426,9 @@ export default {
         // 重置表单
         answerForm.content = '';
         answerForm.images = [];
+
+        // 强制刷新帖子详情和回答列表
+        await loadPostDetail();
       } catch (error) {
         console.error('提交回答失败:', error);
       }

@@ -20,6 +20,18 @@ export const USER_ENDPOINTS = {
   GET_FOLLOWERS_LIST: (userId) => `/users/${userId}/followers`
 }
 
+// 聊天相关接口
+export const CHAT_ENDPOINTS = {
+  GET_SESSIONS: '/chat/sessions',
+  GET_HISTORY: (partnerId) => `/chat/history/${partnerId}`,
+  SEND_MESSAGE: '/chat/message',
+  UPLOAD_IMAGE: '/chat/upload/image',
+  MARK_READ: (sessionId) => `/chat/sessions/${sessionId}/read`,
+  GET_UNREAD: '/chat/unread',
+  DELETE_SESSION: (sessionId) => `/chat/sessions/${sessionId}`,
+  SEARCH_MESSAGES: '/chat/search'
+}
+
 // 身份认证相关接口
 export const IDENTITY_ENDPOINTS = {
   GET_TYPES: '/identity/types',
@@ -99,5 +111,6 @@ export const ENDPOINTS = {
   LOGGER: LOGGER_ENDPOINTS,
   PRODUCT: PRODUCT_ENDPOINTS,
   CART: CART_ENDPOINTS,
-  ORDER: ORDER_ENDPOINTS
+  ORDER: ORDER_ENDPOINTS,
+  CHAT: CHAT_ENDPOINTS
 }

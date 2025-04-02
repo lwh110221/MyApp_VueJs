@@ -36,6 +36,14 @@
               <p class="text-gray-600">{{ authStore.user.email }}</p>
               <p class="text-gray-600">积分：{{ authStore.user.points || 0 }}</p>
               <p class="text-gray-600">注册时间：{{ formatDate(authStore.user.created_at) }}</p>
+              <!-- 添加关注和粉丝信息的按钮 -->
+              <button
+                v-if="authStore.user.id"
+                @click="showFollowModal = true"
+                class="text-blue-500 hover:text-blue-600 mt-2"
+              >
+                查看关注/粉丝
+              </button>
             </div>
           </div>
 
@@ -55,6 +63,12 @@
                 class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
               >
                 修改密码
+              </button>
+              <button
+                @click="showIdentityModal = true; showSettings = false"
+                class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+              >
+                身份认证
               </button>
             </div>
           </div>
@@ -99,12 +113,6 @@
           </div>
         </div>
       </div>
-
-      <!-- 身份认证卡片 -->
-      <IdentityCard />
-
-      <!-- 用户积分卡片 -->
-      <UserPointsCard />
 
       <!-- 用户订单卡片 -->
       <div class="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -157,12 +165,6 @@
         </div>
       </div>
 
-      <!-- 用户关注/粉丝卡片 -->
-      <UserFollowCard
-        v-if="authStore.user.id"
-        :userId="authStore.user.id"
-      />
-
       <div class="mb-6">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-xl font-semibold text-gray-800">我的动态</h3>
@@ -190,6 +192,7 @@
       </div>
     </div>
 
+    <!-- 修改密码模态框 -->
     <div v-if="showPasswordModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white rounded-lg p-6 w-96">
         <div class="flex justify-between items-center mb-4">
@@ -203,6 +206,39 @@
         <ChangePassword @password-changed="onPasswordChanged" />
       </div>
     </div>
+
+    <!-- 关注/粉丝模态框 -->
+    <div v-if="showFollowModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 w-96 max-w-md">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold">关注与粉丝</h3>
+          <button @click="showFollowModal = false" class="text-gray-500 hover:text-gray-700">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <UserFollowCard
+          v-if="authStore.user.id"
+          :userId="authStore.user.id"
+        />
+      </div>
+    </div>
+
+    <!-- 身份认证模态框 -->
+    <div v-if="showIdentityModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 w-96 max-w-md">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold">身份认证</h3>
+          <button @click="showIdentityModal = false" class="text-gray-500 hover:text-gray-700">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <IdentityCard />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -214,7 +250,6 @@ import { messageService } from '../api'
 import CreateMoment from '../components/CreateMoment.vue'
 import MomentList from '../components/MomentList.vue'
 import ChangePassword from '../components/ChangePassword.vue'
-import UserPointsCard from '../components/UserPointsCard.vue'
 import UserFollowCard from '../components/UserFollowCard.vue'
 import IdentityCard from '../components/IdentityCard.vue'
 import UserIdentities from '../components/UserIdentities.vue'
@@ -225,7 +260,6 @@ export default {
     CreateMoment,
     MomentList,
     ChangePassword,
-    UserPointsCard,
     UserFollowCard,
     IdentityCard,
     UserIdentities
@@ -249,6 +283,8 @@ export default {
       showSettings: false,
       showPasswordModal: false,
       showCreateMoment: false,
+      showFollowModal: false,
+      showIdentityModal: false,
       maxBioLength: 200
     }
   },

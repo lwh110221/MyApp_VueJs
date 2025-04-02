@@ -6,6 +6,7 @@ import { useUserStore } from './user'
 import { useIdentityStore } from './identity'
 import { useMomentStore } from './moment'
 import { useHelpStore } from './help'
+import { useChatStore } from './chat'
 
 export {
   useAuthStore,
@@ -15,7 +16,8 @@ export {
   useUserStore,
   useIdentityStore,
   useMomentStore,
-  useHelpStore
+  useHelpStore,
+  useChatStore
 }
 
 // 导出一个辅助函数，用于检查用户是否已认证

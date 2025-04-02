@@ -200,6 +200,32 @@ routes.push(helpRoutes);
 routes.push(helpDetailRoute);
 routes.push(helpCreateRoute);
 
+// 聊天模块路由
+const chatRoute = {
+  path: '/chat',
+  name: 'Chat',
+  component: () => import('@/views/chat'),
+  meta: {
+    requiresAuth: true,
+    title: '我的消息'
+  }
+};
+
+// 聊天模块路由 - 带有用户ID参数
+const chatWithUserRoute = {
+  path: '/chat/user/:partnerId',
+  name: 'ChatWithUser',
+  component: () => import('@/views/chat'),
+  meta: {
+    requiresAuth: true,
+    title: '聊天对话'
+  }
+};
+
+// 将聊天路由添加到路由配置中
+routes.push(chatRoute);
+routes.push(chatWithUserRoute);
+
 // 农产品模块路由
 const productListRoute = {
   path: '/products',

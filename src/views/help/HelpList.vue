@@ -137,12 +137,6 @@
             <router-link :to="`/help/post/${post.id}`" class="block p-4">
               <div class="flex justify-between items-start">
                 <h3 class="text-lg font-medium text-gray-900">{{ post.title }}</h3>
-                <span
-                  class="px-2 py-1 text-xs rounded-full"
-                  :class="helpStore.getPostStatusClass(post.status)"
-                >
-                  {{ helpStore.getPostStatusText(post.status) }}
-                </span>
               </div>
               <p class="mt-2 text-gray-600 line-clamp-2">{{ post.content }}</p>
 
@@ -224,8 +218,8 @@ export default {
 
     // 状态选项
     const statusOptions = {
-      0: '待解决',
-      1: '已解决',
+      0: '已关闭',
+      1: '开放中',
       2: '已关闭'
     };
 

@@ -165,6 +165,17 @@ class API {
     })
   }
 
+  // PATCH 请求
+  patch(url, data = {}, config = {}) {
+    return this.request('patch', url, data, {
+      ...config,
+      headers: {
+        'Content-Type': CONTENT_TYPES.JSON,
+        ...config.headers
+      }
+    })
+  }
+
   // DELETE 请求
   delete(url, config = {}) {
     return this.request('delete', url, null, {
