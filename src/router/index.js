@@ -301,6 +301,27 @@ const orderListRoute = {
   }
 };
 
+// 卖家订单路由
+const sellerOrderListRoute = {
+  path: '/seller/orders',
+  name: 'SellerOrderList',
+  component: () => import('@/views/product/SellerOrderList.vue'),
+  meta: {
+    requiresAuth: true,
+    title: '销售订单'
+  }
+};
+
+const sellerOrderDetailRoute = {
+  path: '/seller/orders/:id',
+  name: 'SellerOrderDetail',
+  component: () => import('@/views/product/SellerOrderDetail.vue'),
+  meta: {
+    requiresAuth: true,
+    title: '销售订单详情'
+  }
+};
+
 const orderDetailRoute = {
   path: '/orders/:id',
   name: 'OrderDetail',
@@ -331,6 +352,8 @@ routes.push(cartRoute);
 routes.push(orderListRoute);
 routes.push(orderDetailRoute);
 routes.push(checkoutRoute);
+routes.push(sellerOrderListRoute);
+routes.push(sellerOrderDetailRoute);
 
 const router = createRouter({
   history: createWebHistory(),

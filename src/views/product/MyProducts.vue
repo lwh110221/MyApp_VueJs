@@ -6,6 +6,9 @@
         <p class="page-subtitle">管理您发布的所有农产品</p>
 
         <div class="header-actions">
+          <router-link to="/seller/orders" class="orders-btn">
+            <i class="fa-solid fa-list"></i> 销售订单
+          </router-link>
           <router-link to="/products/create" class="create-btn">
             <i class="fa-solid fa-plus"></i> 发布新产品
           </router-link>
@@ -422,6 +425,24 @@ export default {
 
 .header-actions {
   margin-top: 15px;
+}
+
+.orders-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #4caf50;
+  color: white;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.orders-btn:hover {
+  background-color: #388e3c;
+  transform: translateY(-2px);
 }
 
 .create-btn {
