@@ -1,13 +1,13 @@
 <template>
   <div class="product-card">
     <div class="product-card__image" @click="goToDetail">
-      <img :src="productImage" :alt="product.name" />
+      <img :src="productImage" :alt="product.title" />
       <div v-if="product.discount" class="product-card__discount">
         {{ product.discount }}% 折扣
       </div>
     </div>
     <div class="product-card__content">
-      <h3 class="product-card__title" @click="goToDetail">{{ product.name }}</h3>
+      <h3 class="product-card__title" @click="goToDetail">{{ product.title }}</h3>
       <div class="product-card__category">
         <span class="category-tag">{{ product.category_name }}</span>
       </div>
@@ -22,16 +22,19 @@
       </div>
       <div class="product-card__footer">
         <div class="product-card__seller">
-          <span>{{ product.seller_name }}</span>
+          <router-link :to="`/user/${product.user_id}`" class="seller-link">
+            {{ product.username }}
+          </router-link>
         </div>
         <div class="product-card__actions">
           <button
             class="add-to-cart-btn"
             @click.stop="addToCart"
-            :disabled="loading || isInCart"
+            :disabled="loading || isInCart || isProductOwner"
+            :title="isProductOwner ? '不能购买自己发布的产品' : ''"
           >
-            <i class="fa-solid" :class="isInCart ? 'fa-check' : 'fa-cart-plus'"></i>
-            {{ isInCart ? '已加入' : '加入购物车' }}
+            <i class="fa-solid" :class="isInCart ? 'fa-check' : (isProductOwner ? 'fa-ban' : 'fa-cart-plus')"></i>
+            {{ isInCart ? '已加入' : (isProductOwner ? '自己的产品' : '加入购物车') }}
           </button>
         </div>
       </div>
@@ -42,7 +45,7 @@
 <script>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useProductStore, useCartStore } from '@/stores'
+import { useProductStore, useCartStore, useAuthStore } from '@/stores'
 
 export default {
   name: 'ProductCard',
@@ -61,7 +64,14 @@ export default {
     const router = useRouter()
     const productStore = useProductStore()
     const cartStore = useCartStore()
+    const authStore = useAuthStore()
     const loading = ref(false)
+
+    // 检查当前用户是否为产品发布者
+    const isProductOwner = computed(() => {
+      if (!props.product || !authStore.isLoggedIn) return false
+      return props.product.user_id === authStore.user.id
+    })
 
     // 获取产品图片
     const productImage = computed(() => {
@@ -89,7 +99,7 @@ export default {
 
     // 添加到购物车
     const addToCart = async () => {
-      if (loading.value || props.isInCart) return
+      if (loading.value || props.isInCart || isProductOwner.value) return
 
       loading.value = true
       try {
@@ -102,6 +112,7 @@ export default {
     return {
       loading,
       productImage,
+      isProductOwner,
       formatPrice,
       truncateText,
       goToDetail,
@@ -224,6 +235,17 @@ export default {
 .product-card__seller {
   font-size: 0.8rem;
   color: #777;
+}
+
+.product-card__seller .seller-link {
+  color: #4caf50;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.product-card__seller .seller-link:hover {
+  color: #388e3c;
+  text-decoration: underline;
 }
 
 .add-to-cart-btn {

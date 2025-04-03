@@ -4,6 +4,16 @@
       <div class="page-header">
         <h1 class="page-title">农产品交易平台</h1>
         <p class="page-subtitle">新鲜、健康、安全的农产品直供平台</p>
+
+        <!-- 农户与商家操作入口 -->
+        <div v-if="isFarmerOrDealer" class="seller-actions">
+          <router-link to="/products/create" class="action-button publish-btn">
+            <i class="fa-solid fa-plus"></i> 发布农产品
+          </router-link>
+          <router-link to="/my-products" class="action-button my-products-btn">
+            <i class="fa-solid fa-list"></i> 我的商品
+          </router-link>
+        </div>
       </div>
 
       <div class="main-content">
@@ -94,6 +104,7 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProductStore, useCartStore } from '@/stores'
+import { useIdentityStore } from '@/stores'
 import ProductFilter from '@/components/product/ProductFilter.vue'
 import ProductCard from '@/components/product/ProductCard.vue'
 
@@ -110,6 +121,7 @@ export default {
     const router = useRouter()
     const productStore = useProductStore()
     const cartStore = useCartStore()
+    const identityStore = useIdentityStore()
 
     const loading = ref(false)
     const products = ref([])
@@ -120,6 +132,11 @@ export default {
     // 分页计算
     const totalPages = computed(() => {
       return Math.ceil(totalItems.value / pageSize.value)
+    })
+
+    // 是否农户或商家身份
+    const isFarmerOrDealer = computed(() => {
+      return identityStore.hasIdentity('FARMER') || identityStore.hasIdentity('DEALER')
     })
 
     // 当前搜索/过滤状态
@@ -298,6 +315,15 @@ export default {
         await productStore.fetchCategories()
       }
 
+      // 获取用户身份信息
+      if (localStorage.getItem('token')) {
+        try {
+          await identityStore.fetchUserIdentities()
+        } catch (error) {
+          console.error('获取用户身份信息失败:', error)
+        }
+      }
+
       // 加载URL过滤条件并获取产品
       loadFiltersFromQuery()
       fetchProducts()
@@ -314,7 +340,8 @@ export default {
       handleFilterChange,
       changePage,
       clearSearch,
-      resetFilters
+      resetFilters,
+      isFarmerOrDealer
     }
   }
 }
@@ -348,6 +375,44 @@ export default {
 .page-subtitle {
   font-size: 1.1rem;
   color: #666;
+  margin-bottom: 15px;
+}
+
+.seller-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.3s;
+  text-decoration: none;
+}
+
+.publish-btn {
+  background-color: #4caf50;
+  color: white;
+}
+
+.publish-btn:hover {
+  background-color: #388e3c;
+}
+
+.my-products-btn {
+  background-color: #ff9800;
+  color: white;
+}
+
+.my-products-btn:hover {
+  background-color: #f57c00;
 }
 
 .main-content {

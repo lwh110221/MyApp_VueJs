@@ -29,14 +29,14 @@
             <i class="fa-solid fa-home"></i> 农产品列表
           </router-link>
           <span class="breadcrumb-separator">/</span>
-          <span class="breadcrumb-item active">{{ product.name }}</span>
+          <span class="breadcrumb-item active">{{ product.title }}</span>
         </div>
 
         <div class="product-main">
           <!-- 产品图片区域 -->
           <div class="product-images">
             <div class="main-image">
-              <img :src="currentImage" :alt="product.name" />
+              <img :src="currentImage" :alt="product.title" />
             </div>
 
             <div v-if="product.images && product.images.length > 1" class="image-thumbnails">
@@ -47,14 +47,14 @@
                 :class="{ active: currentImageIndex === index }"
                 @click="setCurrentImage(index)"
               >
-                <img :src="getProductImage(product, index)" :alt="`${product.name} - 图片 ${index + 1}`" />
+                <img :src="getProductImage(product, index)" :alt="`${product.title} - 图片 ${index + 1}`" />
               </div>
             </div>
           </div>
 
           <!-- 产品信息区域 -->
           <div class="product-info">
-            <h1 class="product-name">{{ product.name }}</h1>
+            <h1 class="product-name">{{ product.title }}</h1>
 
             <div class="product-category">
               <span class="category-label">分类:</span>
@@ -116,22 +116,35 @@
               <button
                 @click="addToCart"
                 class="add-to-cart-btn"
-                :disabled="isAddingToCart || isInCart"
+                :disabled="isAddingToCart || isInCart || isProductOwner"
               >
                 <i v-if="isAddingToCart" class="fa-solid fa-spinner fa-spin"></i>
                 <i v-else-if="isInCart" class="fa-solid fa-check"></i>
                 <i v-else class="fa-solid fa-cart-plus"></i>
                 {{ isInCart ? '已加入购物车' : '加入购物车' }}
               </button>
+
+              <div v-if="isProductOwner" class="owner-notice">
+                <i class="fa-solid fa-info-circle"></i> 您是此产品的发布者，不能购买自己的产品
+              </div>
             </div>
 
             <div class="seller-info">
               <h3 class="seller-title">
                 <i class="fa-solid fa-store"></i> 卖家信息
               </h3>
-              <div class="seller-name">{{ product.seller_name }}</div>
+              <div class="seller-name">
+                <router-link :to="`/user/${product.user_id}`" class="seller-link">
+                  {{ product.username }}
+                </router-link>
+              </div>
               <div v-if="product.seller_phone" class="seller-contact">
                 联系电话: {{ product.seller_phone }}
+              </div>
+              <div class="seller-actions" v-if="authStore && authStore.isLoggedIn && !isProductOwner">
+                <button @click="redirectToChat" class="contact-seller-btn">
+                  <i class="fa-solid fa-comment"></i> 联系卖家
+                </button>
               </div>
             </div>
           </div>
@@ -177,6 +190,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProductStore, useCartStore } from '@/stores'
+import { useAuthStore } from '@/stores'
 import ProductCard from '@/components/product/ProductCard.vue'
 
 export default {
@@ -191,6 +205,7 @@ export default {
     const router = useRouter()
     const productStore = useProductStore()
     const cartStore = useCartStore()
+    const authStore = useAuthStore()
 
     const loading = ref(true)
     const product = ref(null)
@@ -243,6 +258,12 @@ export default {
       return cartStore.cartItems.some(item => item.product_id === product.value.id)
     })
 
+    // 检查当前用户是否为产品发布者
+    const isProductOwner = computed(() => {
+      if (!product.value || !authStore.isLoggedIn) return false
+      return product.value.user_id === authStore.user.id
+    })
+
     // 获取产品图片
     const getProductImage = (product, index = 0) => {
       return productStore.getProductImage(product, index)
@@ -283,7 +304,7 @@ export default {
 
     // 添加到购物车
     const addToCart = async () => {
-      if (isAddingToCart.value || isInCart.value) return
+      if (isAddingToCart.value || isInCart.value || isProductOwner.value) return
 
       isAddingToCart.value = true
       try {
@@ -354,6 +375,25 @@ export default {
       await fetchProductDetails()
     })
 
+    // 重定向到聊天页面
+    const redirectToChat = () => {
+      if (!product.value) return
+
+      console.log('重定向到聊天页面，卖家ID:', product.value.user_id)
+
+      // 确保使用数值类型的用户ID
+      const sellerIdNum = Number(product.value.user_id)
+
+      router.push({
+        name: 'ChatWithUser',
+        params: { partnerId: sellerIdNum.toString() },
+        query: {
+          partnerName: product.value.username,
+          partnerAvatar: product.value.profile_picture || ''
+        }
+      })
+    }
+
     return {
       loading,
       product,
@@ -363,6 +403,7 @@ export default {
       currentImage,
       relatedProducts,
       isInCart,
+      isProductOwner,
       getDiscountPercentage,
       productAttributes,
       getProductImage,
@@ -373,7 +414,9 @@ export default {
       handleQuantityChange,
       addToCart,
       isProductInCart,
-      goBack
+      goBack,
+      redirectToChat,
+      authStore
     }
   }
 }
@@ -735,11 +778,47 @@ export default {
 .seller-name {
   font-weight: 500;
   margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+}
+
+.seller-link {
+  color: #4caf50;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.seller-link:hover {
+  color: #388e3c;
+  text-decoration: underline;
 }
 
 .seller-contact {
   font-size: 0.9rem;
   color: #666;
+  margin-bottom: 10px;
+}
+
+.seller-actions {
+  margin-top: 10px;
+}
+
+.contact-seller-btn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.3s;
+  font-size: 0.9rem;
+}
+
+.contact-seller-btn:hover {
+  background-color: #388e3c;
 }
 
 .product-description {
@@ -817,7 +896,25 @@ export default {
 }
 
 .related-product-item {
-  height: 100%;
+  flex: 0 0 calc(25% - 15px);
+  margin-bottom: 20px;
+}
+
+.owner-notice {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+  border-radius: 4px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.owner-notice i {
+  color: #856404;
 }
 
 @media (max-width: 992px) {

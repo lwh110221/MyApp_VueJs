@@ -535,7 +535,7 @@ export default {
             .filter(img => img.exists)
             .map(img => img.path)
 
-          formData.append('existing_images', JSON.stringify(existingImagePaths))
+          formData.append('keepImages', JSON.stringify(existingImagePaths))
         }
 
         // 处理attributes
