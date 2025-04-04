@@ -228,9 +228,21 @@ const chatWithUserRoute = {
   }
 };
 
+// AI聊天助手路由
+const aiChatRoute = {
+  path: '/ai-chat',
+  name: 'AiChat',
+  component: () => import('@/views/ai/AiChat.vue'),
+  meta: {
+    requiresAuth: true,
+    title: 'AI农业助手'
+  }
+};
+
 // 将聊天路由添加到路由配置中
 routes.push(chatRoute);
 routes.push(chatWithUserRoute);
+routes.push(aiChatRoute);
 
 // 农产品模块路由
 const productListRoute = {

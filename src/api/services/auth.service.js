@@ -39,11 +39,9 @@ class AuthService {
    */
   async register(userData) {
     try {
-      console.log('发送注册请求数据:', userData)
       const response = await API.post(AUTH_ENDPOINTS.REGISTER, userData)
       return response
     } catch (error) {
-      console.error('注册请求失败:', error.response?.data || error.message)
       // 处理特定的错误情况
       if (error.response?.status === 400) {
         const errorMessage = error.response.data?.message || ''
@@ -82,7 +80,6 @@ class AuthService {
   async getProfile() {
     try {
       const userData = await API.get(AUTH_ENDPOINTS.GET_PROFILE)
-      console.log('Profile Response:', userData)
 
       return {
         id: userData?.id || '',
@@ -95,7 +92,6 @@ class AuthService {
         status: userData?.status
       }
     } catch (error) {
-      console.error('Profile Error:', error)
       throw error
     }
   }
@@ -117,16 +113,13 @@ class AuthService {
    */
   async updateAvatar(formData) {
     try {
-      console.log('Updating avatar with formData:', formData)
       const response = await API.put(AUTH_ENDPOINTS.UPDATE_AVATAR, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       })
-      console.log('Update avatar response:', response)
       return response
     } catch (error) {
-      console.error('Update avatar error:', error)
       throw error
     }
   }
@@ -147,11 +140,9 @@ class AuthService {
    */
   async sendEmailVerificationCode(email) {
     try {
-      console.log('发送邮箱验证码:', { email })
       const response = await API.post(AUTH_ENDPOINTS.SEND_EMAIL_VERIFICATION, { email })
       return response
     } catch (error) {
-      console.error('发送邮箱验证码错误:', error.response?.data || error.message)
       if (error.response?.status === 400) {
         const errorMessage = error.response.data?.message || ''
         if (errorMessage.includes('邮箱已被注册')) {
@@ -171,11 +162,9 @@ class AuthService {
    */
   async sendPasswordResetCode(email) {
     try {
-      console.log('发送密码重置验证码:', { email })
       const response = await API.post(AUTH_ENDPOINTS.SEND_RESET_CODE, { email })
       return response
     } catch (error) {
-      console.error('发送密码重置验证码错误:', error.response?.data || error.message)
       if (error.response?.status === 400) {
         const errorMessage = error.response.data?.message || ''
         if (errorMessage.includes('有效的邮箱')) {
@@ -198,11 +187,9 @@ class AuthService {
    */
   async resetPasswordWithCode(resetData) {
     try {
-      console.log('重置密码请求数据:', resetData)
       const response = await API.post(AUTH_ENDPOINTS.RESET_PASSWORD, resetData)
       return response
     } catch (error) {
-      console.error('重置密码错误:', error.response?.data || error.message)
       if (error.response?.status === 400) {
         const errorMessage = error.response.data?.message || ''
         if (errorMessage.includes('验证码无效') || errorMessage.includes('验证码已过期')) {

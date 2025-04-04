@@ -9,6 +9,7 @@ import productService from './services/product.service'
 import cartService from './services/cart.service'
 import orderService from './services/order.service'
 import chatService from './services/chat.service'
+import aiService from './services/ai.service'
 
 // 导出服务
 export {
@@ -22,7 +23,8 @@ export {
   productService,
   cartService,
   orderService,
-  chatService
+  chatService,
+  aiService
 }
 
 // 导出基础 API 实例，以便在特殊情况下直接使用

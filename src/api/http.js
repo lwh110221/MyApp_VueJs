@@ -1,7 +1,7 @@
 import axios from 'axios'
 import router from '../router'
 import { logger } from '../utils/logger'
-import { API_CONFIG, RETRY_CONFIG, HTTP_STATUS, CONTENT_TYPES } from './axiosConfig'
+import { API_CONFIG, RETRY_CONFIG, HTTP_STATUS, CONTENT_TYPES, getApiBaseUrl } from './axiosConfig'
 
 class API {
   constructor() {
@@ -17,16 +17,10 @@ class API {
         config.metadata = { startTime: new Date() }
 
         const token = localStorage.getItem('token')
-        console.log('请求拦截器 - Token:', token ? 'Token存在' : 'Token不存在')
-
         if (token) {
           config.headers.Authorization = `Bearer ${token.trim()}`
-          console.log('请求拦截器 - 添加Authorization头:', `Bearer ${token.trim().substring(0, 10)}...`)
-        } else {
-          console.log('请求拦截器 - 未找到Token')
         }
 
-        console.log('请求拦截器 - 发送请求:', config.method.toUpperCase(), config.url)
         return config
       },
       error => {
@@ -46,7 +40,6 @@ class API {
             `URL: ${response.config.url}, Duration: ${duration}ms`
           )
         }
-        console.log('API Response:', response)
 
         // 处理 DELETE 请求的特殊情况
         if (response.config.method === 'delete') {
@@ -108,7 +101,6 @@ class API {
             break
         }
 
-        console.error('API Error:', error.response)
         return Promise.reject(error)
       }
     )

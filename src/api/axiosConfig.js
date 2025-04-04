@@ -1,6 +1,21 @@
 // Axios 基础配置
+export const getApiBaseUrl = () => {
+  // 如果是本地开发环境，使用环境变量中的API URL
+  const configuredUrl = import.meta.env.VITE_BASE_API_URL;
+
+  // 检查是否为localhost地址
+  if (configuredUrl.includes('localhost') && window.location.hostname !== 'localhost') {
+    // 如果当前不是在localhost访问，则替换为当前主机名
+    const currentHost = window.location.hostname;
+    const port = configuredUrl.split(':')[2].split('/')[0]; // 提取端口号
+    return `http://${currentHost}:${port}/api`;
+  }
+
+  return configuredUrl;
+};
+
 export const API_CONFIG = {
-  baseURL: import.meta.env.VITE_BASE_API_URL,
+  baseURL: getApiBaseUrl(),
   timeout: 15000,
   withCredentials: true,
   headers: {
