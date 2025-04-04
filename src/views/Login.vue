@@ -24,6 +24,11 @@
             :disabled="loading"
             placeholder="请输入密码"
           >
+          <div class="text-right mt-1">
+            <router-link to="/forgot-password" class="text-sm text-blue-500 hover:text-blue-600">
+              忘记密码？
+            </router-link>
+          </div>
         </div>
         <p v-if="errorMessage" class="text-red-500 text-sm">{{ errorMessage }}</p>
         <button

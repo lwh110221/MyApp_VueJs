@@ -6,7 +6,10 @@ export const AUTH_ENDPOINTS = {
   GET_PROFILE: '/users/profile',
   UPDATE_PROFILE: '/users/profile',
   UPDATE_AVATAR: '/users/profile/avatar',
-  GENERATE_CAPTCHA: '/captcha/generate'
+  GENERATE_CAPTCHA: '/captcha/generate',
+  SEND_EMAIL_VERIFICATION: '/users/send-verification-code',
+  SEND_RESET_CODE: '/password/send-reset-code',
+  RESET_PASSWORD: '/password/reset-with-code'
 }
 
 // 用户相关接口
