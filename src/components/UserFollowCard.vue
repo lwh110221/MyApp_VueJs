@@ -1,150 +1,146 @@
 <template>
-  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-    <div class="flex justify-between items-center mb-4">
-      <div class="flex space-x-4">
-        <button
-          @click="activeTab = 'following'"
-          class="font-medium text-lg"
-          :class="activeTab === 'following' ? 'text-blue-600' : 'text-gray-600 hover:text-gray-800'"
-        >
-          关注 ({{ followingCount }})
-        </button>
-        <button
-          @click="activeTab = 'followers'"
-          class="font-medium text-lg"
-          :class="activeTab === 'followers' ? 'text-blue-600' : 'text-gray-600 hover:text-gray-800'"
-        >
-          粉丝 ({{ followersCount }})
-        </button>
-      </div>
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <!-- 标题栏 -->
+    <div class="flex px-6 pt-5 pb-4 border-b border-gray-100">
+      <button
+        @click="activeTab = 'following'"
+        class="relative px-4 py-2 mr-4 text-sm font-medium transition-colors"
+        :class="activeTab === 'following' ? 'text-blue-600 bg-blue-50 rounded-full' : 'text-gray-600 hover:text-gray-900'"
+      >
+        关注
+        <span class="ml-1 px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full">{{ followingCount }}</span>
+      </button>
+      <button
+        @click="activeTab = 'followers'"
+        class="relative px-4 py-2 text-sm font-medium transition-colors"
+        :class="activeTab === 'followers' ? 'text-blue-600 bg-blue-50 rounded-full' : 'text-gray-600 hover:text-gray-900'"
+      >
+        粉丝
+        <span class="ml-1 px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full">{{ followersCount }}</span>
+      </button>
     </div>
 
     <!-- 关注列表 -->
-    <div v-if="activeTab === 'following'" class="space-y-4">
-      <div v-if="followingLoading" class="flex justify-center py-6">
-        <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+    <div v-if="activeTab === 'following'" class="px-6">
+      <div v-if="followingLoading" class="flex justify-center py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-3 border-blue-500 border-t-transparent"></div>
       </div>
 
-      <div v-else-if="following.length > 0" class="space-y-3">
-        <div v-for="user in following" :key="user.id" class="border-b border-gray-100 pb-3 last:border-b-0">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-              <img :src="getUserAvatar(user.profile_picture)" class="w-10 h-10 rounded-full object-cover" alt="头像">
-              <div>
-                <router-link :to="`/user/${user.id}`" class="font-medium text-gray-800 hover:text-blue-600">
-                  {{ user.username }}
-                </router-link>
-                <p class="text-xs text-gray-500">{{ user.bio || '暂无简介' }}</p>
-              </div>
+      <div v-else-if="following.length > 0" class="divide-y divide-gray-50">
+        <div v-for="user in following" :key="user.id" class="py-4 transition-colors hover:bg-gray-50">
+          <div class="flex items-center">
+            <img :src="getUserAvatar(user.profile_picture)" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" alt="头像">
+            <div class="ml-4 flex-1">
+              <router-link :to="`/user/${user.id}`" class="font-semibold text-gray-900 hover:text-blue-600 transition-colors">
+                {{ user.username }}
+              </router-link>
+              <p class="mt-0.5 text-sm text-gray-500 line-clamp-1">{{ user.bio || '暂无简介' }}</p>
             </div>
-
             <button
               @click="handleUnfollow(user.id)"
-              class="text-sm px-3 py-1 border border-gray-300 rounded-full text-gray-600 hover:bg-gray-50"
+              class="ml-4 px-4 py-1.5 text-sm font-medium rounded-full transition-colors"
+              :class="unfollowingId === user.id ? 'bg-gray-100 text-gray-400' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
               :disabled="unfollowingId === user.id"
             >
-              {{ unfollowingId === user.id ? '处理中...' : '取消关注' }}
+              {{ unfollowingId === user.id ? '取消中...' : '取消关注' }}
             </button>
           </div>
         </div>
 
-        <!-- 分页器 -->
-        <div class="flex justify-between items-center mt-4">
-          <div class="text-sm text-gray-500">
-            共 {{ followingPagination.total || 0 }} 个关注
-          </div>
+        <!-- 分页控制器 -->
+        <div class="flex items-center justify-between py-4">
+          <span class="text-sm text-gray-500">共 {{ followingPagination.total }} 个关注</span>
           <div class="flex space-x-2">
             <button
               @click="changePage('following', followingPagination.page - 1)"
-              :disabled="followingPagination.page <= 1 || followingLoading"
-              class="px-3 py-1 rounded border"
-              :class="followingPagination.page <= 1 ? 'text-gray-400 border-gray-200' : 'text-gray-600 border-gray-300 hover:bg-gray-50'"
+              :disabled="followingPagination.page <= 1"
+              class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+              :class="followingPagination.page <= 1 ? 'bg-gray-50 text-gray-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
             >
-              上一页
+              <i class="fas fa-chevron-left mr-1"></i> 上一页
             </button>
             <button
               @click="changePage('following', followingPagination.page + 1)"
-              :disabled="followingPagination.page >= Math.ceil(followingPagination.total / followingPagination.limit) || followingLoading"
-              class="px-3 py-1 rounded border"
-              :class="followingPagination.page >= Math.ceil(followingPagination.total / followingPagination.limit) ? 'text-gray-400 border-gray-200' : 'text-gray-600 border-gray-300 hover:bg-gray-50'"
+              :disabled="followingPagination.page >= Math.ceil(followingPagination.total / followingPagination.limit)"
+              class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+              :class="followingPagination.page >= Math.ceil(followingPagination.total / followingPagination.limit) ? 'bg-gray-50 text-gray-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
             >
-              下一页
+              下一页 <i class="fas fa-chevron-right ml-1"></i>
             </button>
           </div>
         </div>
       </div>
 
-      <div v-else class="text-center py-6 text-gray-500">
-        暂无关注的用户
+      <div v-else class="flex flex-col items-center py-12 text-gray-400">
+        <i class="fas fa-user-friends text-4xl mb-4"></i>
+        <p>暂无关注的用户</p>
       </div>
     </div>
 
     <!-- 粉丝列表 -->
-    <div v-if="activeTab === 'followers'" class="space-y-4">
-      <div v-if="followersLoading" class="flex justify-center py-6">
-        <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+    <div v-if="activeTab === 'followers'" class="px-6">
+      <div v-if="followersLoading" class="flex justify-center py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-3 border-blue-500 border-t-transparent"></div>
       </div>
 
-      <div v-else-if="followers.length > 0" class="space-y-3">
-        <div v-for="user in followers" :key="user.id" class="border-b border-gray-100 pb-3 last:border-b-0">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-              <img :src="getUserAvatar(user.profile_picture)" class="w-10 h-10 rounded-full object-cover" alt="头像">
-              <div>
-                <router-link :to="`/user/${user.id}`" class="font-medium text-gray-800 hover:text-blue-600">
-                  {{ user.username }}
-                </router-link>
-                <p class="text-xs text-gray-500">{{ user.bio || '暂无简介' }}</p>
-              </div>
+      <div v-else-if="followers.length > 0" class="divide-y divide-gray-50">
+        <div v-for="user in followers" :key="user.id" class="py-4 transition-colors hover:bg-gray-50">
+          <div class="flex items-center">
+            <img :src="getUserAvatar(user.profile_picture)" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" alt="头像">
+            <div class="ml-4 flex-1">
+              <router-link :to="`/user/${user.id}`" class="font-semibold text-gray-900 hover:text-blue-600 transition-colors">
+                {{ user.username }}
+              </router-link>
+              <p class="mt-0.5 text-sm text-gray-500 line-clamp-1">{{ user.bio || '暂无简介' }}</p>
             </div>
-
             <button
               v-if="!user.is_followed"
               @click="handleFollow(user.id)"
-              class="text-sm px-3 py-1 bg-blue-500 rounded-full text-white hover:bg-blue-600"
+              class="ml-4 px-4 py-1.5 text-sm font-medium text-white rounded-full transition-colors"
+              :class="followingId === user.id ? 'bg-blue-400' : 'bg-blue-500 hover:bg-blue-600'"
               :disabled="followingId === user.id"
             >
-              {{ followingId === user.id ? '处理中...' : '关注' }}
+              {{ followingId === user.id ? '关注中...' : '关注' }}
             </button>
             <button
               v-else
               @click="handleUnfollow(user.id)"
-              class="text-sm px-3 py-1 border border-gray-300 rounded-full text-gray-600 hover:bg-gray-50"
+              class="ml-4 px-4 py-1.5 text-sm font-medium rounded-full transition-colors"
+              :class="unfollowingId === user.id ? 'bg-gray-100 text-gray-400' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
               :disabled="unfollowingId === user.id"
             >
-              {{ unfollowingId === user.id ? '处理中...' : '已关注' }}
+              {{ unfollowingId === user.id ? '取消中...' : '已关注' }}
             </button>
           </div>
         </div>
 
-        <!-- 分页器 -->
-        <div class="flex justify-between items-center mt-4">
-          <div class="text-sm text-gray-500">
-            共 {{ followersPagination.total || 0 }} 个粉丝
-          </div>
+        <!-- 分页控制器 -->
+        <div class="flex items-center justify-between py-4">
+          <span class="text-sm text-gray-500">共 {{ followersPagination.total }} 个粉丝</span>
           <div class="flex space-x-2">
             <button
               @click="changePage('followers', followersPagination.page - 1)"
-              :disabled="followersPagination.page <= 1 || followersLoading"
-              class="px-3 py-1 rounded border"
-              :class="followersPagination.page <= 1 ? 'text-gray-400 border-gray-200' : 'text-gray-600 border-gray-300 hover:bg-gray-50'"
+              :disabled="followersPagination.page <= 1"
+              class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+              :class="followersPagination.page <= 1 ? 'bg-gray-50 text-gray-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
             >
-              上一页
+              <i class="fas fa-chevron-left mr-1"></i> 上一页
             </button>
             <button
               @click="changePage('followers', followersPagination.page + 1)"
-              :disabled="followersPagination.page >= Math.ceil(followersPagination.total / followersPagination.limit) || followersLoading"
-              class="px-3 py-1 rounded border"
-              :class="followersPagination.page >= Math.ceil(followersPagination.total / followersPagination.limit) ? 'text-gray-400 border-gray-200' : 'text-gray-600 border-gray-300 hover:bg-gray-50'"
+              :disabled="followersPagination.page >= Math.ceil(followersPagination.total / followersPagination.limit)"
+              class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+              :class="followersPagination.page >= Math.ceil(followersPagination.total / followersPagination.limit) ? 'bg-gray-50 text-gray-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
             >
-              下一页
+              下一页 <i class="fas fa-chevron-right ml-1"></i>
             </button>
           </div>
         </div>
       </div>
 
-      <div v-else class="text-center py-6 text-gray-500">
-        暂无粉丝
+      <div v-else class="flex flex-col items-center py-12 text-gray-400">
+        <i class="fas fa-users text-4xl mb-4"></i>
+        <p>暂无粉丝</p>
       </div>
     </div>
   </div>

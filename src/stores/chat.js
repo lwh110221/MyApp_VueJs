@@ -128,6 +128,11 @@ export const useChatStore = defineStore('chat', () => {
           repliedUserIds.value.add(Number(message.sender_id))
         }
 
+        // 确保消息有正确的content_type字段
+        if (message.content_type === undefined) {
+          message.content_type = 0 // 默认为文本类型
+        }
+
         // 如果是当前会话，添加到聊天历史并标记为已读
         if (currentPartnerId.value &&
            (message.sender_id === Number(currentPartnerId.value) ||
@@ -186,6 +191,7 @@ export const useChatStore = defineStore('chat', () => {
       // 更新现有会话
       const session = sessions.value[existingSessionIndex]
       session.lastMessage = message.content
+      session.contentType = message.content_type
       session.lastTime = message.send_time
       session.unreadCount += 1
     } else {
@@ -196,6 +202,7 @@ export const useChatStore = defineStore('chat', () => {
         partnerName: message.sender_name,
         partnerAvatar: message.sender_avatar,
         lastMessage: message.content,
+        contentType: message.content_type,
         lastTime: message.send_time,
         unreadCount: 1
       })
@@ -353,6 +360,7 @@ export const useChatStore = defineStore('chat', () => {
       // 更新现有会话
       const session = sessions.value[existingSessionIndex]
       session.lastMessage = message.content
+      session.contentType = message.content_type
       session.lastTime = message.send_time
     } else if (currentSession.value) {
       // 创建新会话
@@ -362,6 +370,7 @@ export const useChatStore = defineStore('chat', () => {
         partnerName: currentSession.value.partnerName || '未知用户',
         partnerAvatar: currentSession.value.partnerAvatar,
         lastMessage: message.content,
+        contentType: message.content_type,
         lastTime: message.send_time,
         unreadCount: 0
       })

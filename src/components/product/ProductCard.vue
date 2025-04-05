@@ -21,11 +21,6 @@
         </div>
       </div>
       <div class="product-card__footer">
-        <div class="product-card__seller">
-          <router-link :to="`/user/${product.user_id}`" class="seller-link">
-            {{ product.username }}
-          </router-link>
-        </div>
         <div class="product-card__actions">
           <button
             class="add-to-cart-btn"

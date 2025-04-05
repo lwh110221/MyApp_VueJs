@@ -15,19 +15,6 @@
         </div>
       </div>
 
-      <!-- 订单统计 -->
-      <div v-else-if="orderStats" class="order-stats">
-        <div
-          v-for="(count, status) in orderStats"
-          :key="status"
-          class="stat-item"
-          :class="{ active: activeStatus === status }"
-          @click="filterByStatus(status)"
-        >
-          <div class="stat-count">{{ count }}</div>
-          <div class="stat-label">{{ getStatusText(status) }}</div>
-        </div>
-      </div>
 
       <!-- 订单为空 -->
       <div v-if="!loading && orders.length === 0" class="empty-orders">

@@ -164,7 +164,7 @@
 <script>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { aiService } from '@/api'
-import { marked } from 'marked'
+import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
 import { getRandomAgricultureQuestions } from '@/utils/agricultureQuestions'
 
@@ -334,74 +334,51 @@ export default {
       messagesEnd.value?.scrollIntoView({ behavior: 'smooth' })
     }
 
+    // 初始化markdown-it实例
+    const md = MarkdownIt({
+      html: false,           // 禁用HTML标签以避免XSS风险
+      xhtmlOut: false,       // 使用'/'闭合单标签 (<br />)
+      breaks: true,          // 将\n转换为<br>
+      linkify: true,         // 自动转换URL为链接
+      typographer: true      // 启用一些语言中性的替换和引号美化
+    });
+
     const formatMessage = (content) => {
-      if (!content) return ''
+      if (!content) return '';
 
       if (markdownCache.value.has(content)) {
-        return markdownCache.value.get(content)
+        return markdownCache.value.get(content);
       }
 
       try {
-        // 适当处理换行，但不重复添加换行
-        const preparedContent = content.replace(/\n{3,}/g, '\n\n') // 将多个换行替换为最多两个换行
+        // 使用markdown-it解析markdown内容
+        const rendered = md.render(content);
 
-        // 使用 marked 将 Markdown 转换为 HTML
-        marked.setOptions({
-          gfm: true,
-          breaks: true,
-          pedantic: false,
-          sanitize: false,
-          smartLists: true,
-          smartypants: true
+        // 使用DOMPurify净化HTML以防止XSS攻击
+        const sanitizedHtml = DOMPurify.sanitize(rendered, {
+          ALLOWED_TAGS: [
+            'p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+            'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a',
+            'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr'
+          ],
+          ALLOWED_ATTR: ['href', 'target', 'value', 'class']
         });
 
-        // 完全重写renderer以确保有序列表正确渲染
-        const renderer = new marked.Renderer();
-
-        // 保留原始列表标记
-        renderer.listitem = (text) => {
-          return `<li>${text}</li>\n`;
-        };
-
-        // 自定义列表渲染，确保有序列表的标记保留
-        renderer.list = (body, ordered, start) => {
-          // 强制使用指定的起始数字
-          const startAttr = (ordered && start && start !== 1) ? ` start="${start}"` : '';
-          const type = ordered ? 'ol' : 'ul';
-          return `<${type}${startAttr}>\n${body}</${type}>\n`;
-        };
-
-        // 预处理内容，确保列表项被正确识别
-        let processedContent = preparedContent;
-
-        // 对有序列表进行预处理，确保编号被保留
-        // 匹配类似"1. "、"2. "的模式
-        processedContent = processedContent.replace(/^(\d+)\.\s/gm, (match, num) => {
-          // 强制标记为有序列表项，并保留原始编号
-          return `${num}\\. `;
-        });
-
-        // 使用自定义渲染器渲染内容
-        const html = marked(processedContent, { renderer });
-
-        // 使用 DOMPurify 清理 HTML
-        const sanitizedHtml = DOMPurify.sanitize(html, {
-          ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-                         'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a', 'img', 'table',
-                         'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'span'],
-          ALLOWED_ATTR: ['href', 'target', 'src', 'alt', 'class', 'style', 'start']
-        })
-
-        markdownCache.value.set(content, sanitizedHtml)
-
-        return sanitizedHtml
+        markdownCache.value.set(content, sanitizedHtml);
+        return sanitizedHtml;
       } catch (e) {
-        // 出现错误时，至少显示原始内容
-        const fallbackHtml = content.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')
-        markdownCache.value.set(content, fallbackHtml)
-        return fallbackHtml
+        console.error('Markdown格式化错误:', e);
+        // 出现错误时，返回纯文本
+        const fallbackText = content
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br>');
+
+        markdownCache.value.set(content, fallbackText);
+        return fallbackText;
       }
-    }
+    };
 
     // 加载随机问题
     const loadRandomQuestions = () => {
@@ -1055,6 +1032,9 @@ export default {
   max-width: 70%;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  overflow-wrap: break-word;  /* 确保长单词换行 */
+  word-break: break-word;     /* 在适当的位置断开单词 */
+  overflow: hidden;           /* 防止内容溢出 */
 }
 
 .message.user .message-content {
@@ -1156,6 +1136,7 @@ textarea:focus {
   min-height: 1.6em;
   overflow-anchor: none;
   word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .markdown-content p {
@@ -1187,6 +1168,8 @@ textarea:focus {
   margin: 1em 0;
   position: relative;
   transition: background-color 0.2s ease;
+  max-width: 100%;  /* 限制最大宽度 */
+  white-space: pre-wrap; /* 允许代码换行 */
 }
 
 .markdown-content code {
@@ -1200,6 +1183,8 @@ textarea:focus {
 .markdown-content pre code {
   padding: 0;
   background: transparent;
+  white-space: pre-wrap; /* 允许代码换行 */
+  word-break: break-word; /* 在适当的位置断开单词 */
 }
 
 .markdown-content h1, .markdown-content h2, .markdown-content h3 {
@@ -1501,5 +1486,29 @@ textarea:focus {
   white-space: pre-wrap !important;
   font-family: inherit !important;
   line-height: inherit !important;
+}
+
+.markdown-content table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  width: 100%;
+  overflow-x: auto;
+  display: block;
+}
+
+.markdown-content table th,
+.markdown-content table td {
+  border: 1px solid #ddd;
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.markdown-content table th {
+  background-color: #f0f0f0;
+  font-weight: bold;
+}
+
+.markdown-content table tr:nth-child(even) {
+  background-color: #f9f9f9;
 }
 </style>

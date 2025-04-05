@@ -51,6 +51,15 @@
             required
           >
         </div>
+        <div>
+          <label class="block text-gray-700 mb-2">确认密码</label>
+          <input
+            v-model="confirmPassword"
+            type="password"
+            class="w-full px-3 py-2 border rounded-lg"
+            required
+          >
+        </div>
 
         <!-- 图形验证码 -->
         <div>
@@ -103,6 +112,7 @@ export default {
       username: '',
       email: '',
       password: '',
+      confirmPassword: '',
       captcha: '',
       captchaUrl: '',
       emailVerificationCode: '',
@@ -178,6 +188,12 @@ export default {
       // 密码长度验证
       if (this.password.length < 6) {
         messageService.error('密码至少需要6个字符')
+        return
+      }
+
+      // 验证两次密码是否一致
+      if (this.password !== this.confirmPassword) {
+        messageService.error('两次输入的密码不一致')
         return
       }
 
