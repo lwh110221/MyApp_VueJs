@@ -24,6 +24,16 @@ export const useProductStore = defineStore('product', {
   }),
 
   getters: {
+    // 计算总页数
+    totalPages(state) {
+      return Math.ceil(state.pagination.total / state.pagination.limit) || 0
+    },
+
+    // 计算总产品数
+    totalProducts(state) {
+      return state.pagination.total || 0
+    },
+
     // 获取产品图片，处理可能的路径问题
     getProductImage: (state) => (product, index = 0) => {
       if (!product) {
@@ -139,10 +149,21 @@ export const useProductStore = defineStore('product', {
 
         if (response && response.data) {
           this.products = response.data.list || []
-          this.pagination = response.data.pagination || {
-            total: 0,
-            page: 1,
-            limit: 10
+
+          // 处理分页数据，兼容不同格式
+          if (response.data.pagination) {
+            this.pagination = {
+              total: response.data.pagination.total || 0,
+              page: response.data.pagination.page || 1,
+              limit: response.data.pagination.pageSize || response.data.pagination.limit || 10
+            }
+          } else {
+            // 如果没有pagination对象，尝试从响应中提取分页信息
+            this.pagination = {
+              total: response.data.total || 0,
+              page: params.page || 1,
+              limit: params.limit || 10
+            }
           }
         }
 

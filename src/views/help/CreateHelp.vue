@@ -9,174 +9,138 @@
 
     <!-- 表单容器 -->
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
-      <div class="px-6 py-4 bg-gray-50 border-b">
-        <h1 class="text-xl font-semibold">发布求助问题</h1>
+      <div class="px-4 sm:px-6 py-4 bg-green-50 border-b border-green-100">
+        <h2 class="text-xl font-semibold text-gray-800">发布专家求助</h2>
+        <p class="mt-1 text-sm text-gray-600">提交您的农业问题，专家会尽快为您解答</p>
       </div>
 
-      <div class="p-6">
-        <!-- 分类选择 -->
-        <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 mb-2">分类</label>
-          <div v-if="helpStore.loading.categories" class="py-2 flex items-center">
-            <div class="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-green-500 mr-2"></div>
-            <span class="text-sm text-gray-500">加载分类中...</span>
-          </div>
-          <div v-else-if="!helpStore.hasCategories" class="text-sm text-red-500">
-            暂无可用分类，请联系管理员
-          </div>
-          <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <button
-              v-for="category in helpStore.categories"
-              :key="category.id"
-              type="button"
-              class="px-4 py-2 rounded-md text-center text-sm transition"
-              :class="formData.category_id === category.id
-                ? 'bg-green-100 text-green-700 border border-green-500'
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-transparent'"
-              @click="formData.category_id = category.id"
-            >
-              {{ category.name }}
-            </button>
-          </div>
-          <div v-if="formErrors.category_id" class="mt-1 text-sm text-red-500">
-            {{ formErrors.category_id }}
-          </div>
-        </div>
-
-        <!-- 标题 -->
-        <div class="mb-6">
-          <label for="title" class="block text-sm font-medium text-gray-700 mb-2">标题</label>
-          <input
-            id="title"
-            v-model="formData.title"
-            type="text"
-            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            placeholder="请输入求助标题（5-100字）"
-            maxlength="100"
-          />
-          <div class="mt-1 flex justify-between">
-            <div v-if="formErrors.title" class="text-sm text-red-500">
-              {{ formErrors.title }}
-            </div>
-            <div class="text-xs text-gray-500">
-              {{ formData.title.length }}/100
+      <div class="p-4 sm:p-6">
+        <!-- 表单字段 -->
+        <div class="space-y-6">
+          <!-- 标题 -->
+          <div>
+            <label for="title" class="block text-sm font-medium text-gray-700 mb-1">问题标题 <span class="text-red-500">*</span></label>
+            <input
+              id="title"
+              v-model="formData.title"
+              type="text"
+              class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="请输入简短明了的问题标题"
+              maxlength="50"
+            />
+            <div class="flex justify-between mt-1">
+              <div v-if="formErrors.title" class="text-sm text-red-500">{{ formErrors.title }}</div>
+              <div class="text-sm text-gray-500 ml-auto">{{ formData.title.length }}/50</div>
             </div>
           </div>
-        </div>
 
-        <!-- 内容 -->
-        <div class="mb-6">
-          <label for="content" class="block text-sm font-medium text-gray-700 mb-2">内容</label>
-          <textarea
-            id="content"
-            v-model="formData.content"
-            rows="8"
-            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            placeholder="请详细描述您的问题，以便专家更好地帮助您（至少10字）"
-          ></textarea>
-          <div class="mt-1 flex justify-between">
-            <div v-if="formErrors.content" class="text-sm text-red-500">
-              {{ formErrors.content }}
-            </div>
-            <div class="text-xs text-gray-500">
-              {{ formData.content.length }}字
-            </div>
-          </div>
-        </div>
-
-        <!-- 图片上传 -->
-        <div class="mb-6">
-          <div class="flex items-center justify-between mb-2">
-            <label class="block text-sm font-medium text-gray-700">图片（可选，最多5张）</label>
-            <span class="text-xs text-gray-500">{{ formData.images.length }}/5</span>
-          </div>
-
-          <div class="border-2 border-dashed border-gray-300 rounded-lg p-4">
-            <!-- 上传按钮 -->
-            <div v-if="formData.images.length < 5" class="mb-4">
-              <input
-                ref="fileInput"
-                type="file"
-                accept="image/*"
-                multiple
-                class="hidden"
-                @change="handleFileChange"
-              />
-              <button
-                type="button"
-                @click="$refs.fileInput.click()"
-                class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded flex items-center justify-center mx-auto"
-                :disabled="uploading"
+          <!-- 分类 -->
+          <div>
+            <label for="category" class="block text-sm font-medium text-gray-700 mb-1">问题分类 <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <select
+                id="category"
+                v-model="formData.category_id"
+                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none bg-white"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <option value="" disabled>请选择问题分类</option>
+                <option v-for="category in helpStore.categories" :key="category.id" :value="category.id">
+                  {{ category.name }}
+                </option>
+              </select>
+              <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                <svg class="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </div>
+            </div>
+            <div v-if="formErrors.category_id" class="mt-1 text-sm text-red-500">{{ formErrors.category_id }}</div>
+          </div>
+
+          <!-- 内容 -->
+          <div>
+            <label for="content" class="block text-sm font-medium text-gray-700 mb-1">问题描述 <span class="text-red-500">*</span></label>
+            <textarea
+              id="content"
+              v-model="formData.content"
+              rows="6"
+              class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="请详细描述您的问题，包括遇到的情况、尝试过的方法以及想要得到的帮助"
+              maxlength="2000"
+            ></textarea>
+            <div class="flex justify-between mt-1">
+              <div v-if="formErrors.content" class="text-sm text-red-500">{{ formErrors.content }}</div>
+              <div class="text-sm text-gray-500 ml-auto">{{ formData.content.length }}/2000</div>
+            </div>
+          </div>
+
+          <!-- 图片上传 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">问题相关图片（选填）</label>
+            <div class="flex flex-wrap items-center gap-2">
+              <!-- 上传图标按钮 -->
+              <button
+                @click="$refs.fileInput.click()"
+                type="button"
+                :disabled="formData.images.length >= 5 || uploading"
+                class="p-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                :class="{ 'opacity-50 cursor-not-allowed': formData.images.length >= 5 || uploading }"
+                title="上传图片"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <span>{{ uploading ? '上传中...' : '选择图片' }}</span>
               </button>
+
+              <span v-if="uploading" class="text-sm text-gray-500">上传中...</span>
+              <span v-else-if="formData.images.length >= 5" class="text-sm text-amber-600">已达到最大上传数量</span>
+              <span v-else-if="formData.images.length > 0" class="text-sm text-gray-500">已上传 {{ formData.images.length }}/5 张图片</span>
+              <span v-else class="text-sm text-gray-500">可上传最多5张图片</span>
             </div>
 
             <!-- 图片预览 -->
-            <div v-if="formData.images.length > 0" class="grid grid-cols-2 md:grid-cols-5 gap-2">
-              <div
-                v-for="(image, index) in formData.images"
-                :key="index"
-                class="relative rounded overflow-hidden h-24"
-              >
-                <img :src="getImageUrl(typeof image === 'string' ? image : image.url)" class="w-full h-full object-cover" />
-                <div class="absolute inset-0 bg-black bg-opacity-40 opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                  <button
-                    type="button"
-                    @click="removeImage(index)"
-                    class="text-white bg-red-600 hover:bg-red-700 rounded-full w-8 h-8 flex items-center justify-center"
-                  >
-                    &times;
-                  </button>
-                </div>
+            <div v-if="formData.images.length > 0" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2 mt-2">
+              <div v-for="(image, index) in previewImages" :key="index" class="relative">
+                <img :src="image" class="w-full h-16 object-cover rounded border" />
+                <button
+                  @click="removeImage(index)"
+                  class="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs -mt-1 -mr-1 shadow"
+                >
+                  &times;
+                </button>
               </div>
             </div>
 
-            <!-- 空状态 -->
-            <div v-if="formData.images.length === 0" class="text-center py-6 text-gray-500">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <p class="text-sm">点击上方按钮上传图片</p>
-            </div>
+            <input
+              type="file"
+              ref="fileInput"
+              multiple
+              accept="image/jpeg,image/png"
+              class="hidden"
+              @change="handleFileChange"
+            />
+            <div v-if="formErrors.images" class="mt-1 text-sm text-red-500">{{ formErrors.images }}</div>
           </div>
 
-          <div v-if="formErrors.images" class="mt-1 text-sm text-red-500">
-            {{ formErrors.images }}
+          <!-- 提交按钮 -->
+          <div class="flex justify-end pt-4">
+            <button
+              type="button"
+              @click="router.back()"
+              class="mr-3 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              @click="submitForm"
+              class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition"
+              :disabled="helpStore.loading.createPost"
+            >
+              <span v-if="helpStore.loading.createPost">提交中...</span>
+              <span v-else>发布求助</span>
+            </button>
           </div>
-        </div>
-
-        <!-- 提示信息 -->
-        <div class="mb-6 p-4 bg-blue-50 text-blue-800 rounded-lg">
-          <h3 class="text-base font-medium mb-2">发布须知：</h3>
-          <ul class="list-disc pl-5 space-y-1 text-sm">
-            <li>求助问题将由专业领域的专家回答。</li>
-            <li>请尽量详细描述您的问题，包括可能的背景信息，以便专家更好地帮助您。</li>
-            <li>添加图片可以帮助专家更好地理解您的问题。</li>
-            <li>发布后，您可以根据专家回答的质量选择是否采纳。</li>
-            <li>已采纳回答的求助将被标记为"已解决"。</li>
-          </ul>
-        </div>
-
-        <!-- 提交按钮 -->
-        <div class="flex justify-between">
-          <router-link
-            to="/help"
-            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-          >
-            取消
-          </router-link>
-          <button
-            type="button"
-            @click="submitForm"
-            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
-            :disabled="helpStore.loading.createPost"
-          >
-            {{ helpStore.loading.createPost ? '发布中...' : '发布求助' }}
-          </button>
         </div>
       </div>
     </div>
@@ -239,8 +203,8 @@ export default {
       } else if (formData.title.length < 5) {
         formErrors.title = '标题不能少于5个字符';
         valid = false;
-      } else if (formData.title.length > 100) {
-        formErrors.title = '标题不能超过100个字符';
+      } else if (formData.title.length > 50) {
+        formErrors.title = '标题不能超过50个字符';
         valid = false;
       }
 
@@ -250,6 +214,9 @@ export default {
         valid = false;
       } else if (formData.content.length < 10) {
         formErrors.content = '内容不能少于10个字符';
+        valid = false;
+      } else if (formData.content.length > 2000) {
+        formErrors.content = '内容不能超过2000个字符';
         valid = false;
       }
 
@@ -354,7 +321,16 @@ export default {
       submitForm,
       handleFileChange,
       removeImage,
-      getImageUrl
+      getImageUrl,
+      router,
+      previewImages: computed(() => {
+        return formData.images.map(image => {
+          if (typeof image === 'string') {
+            return getImageUrl(image);
+          }
+          return URL.createObjectURL(image);
+        });
+      })
     };
   }
 };

@@ -26,11 +26,11 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-400 rounded-full;
+  @apply bg-highland-400 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-500;
+  @apply bg-highland-500;
 }
 
 /* 全局过渡动画 */
@@ -57,20 +57,20 @@ body {
 /* 表单输入框聚焦样式 */
 input:focus,
 textarea:focus {
-  @apply outline-none ring-2 ring-blue-500 ring-opacity-50;
+  @apply outline-none ring-2 ring-highland-500 ring-opacity-50;
 }
 
 /* 按钮基础样式 */
 .btn {
-  @apply px-4 py-2 rounded-lg transition-colors duration-200 ease-in-out;
+  @apply px-4 py-2 rounded-lg transition-colors duration-200 ease-in-out font-medium;
 }
 
 .btn-primary {
-  @apply bg-blue-500 text-white hover:bg-blue-600;
+  @apply bg-highland-500 text-white hover:bg-highland-600;
 }
 
 .btn-secondary {
-  @apply bg-gray-500 text-white hover:bg-gray-600;
+  @apply bg-crop-500 text-white hover:bg-crop-600;
 }
 
 .btn-danger {
@@ -79,10 +79,39 @@ textarea:focus {
 
 /* 卡片基础样式 */
 .card {
-  @apply bg-white rounded-lg shadow-md p-6;
+  @apply bg-white rounded-lg shadow-md p-6 border border-highland-100;
 }
 
 /* 头像基础样式 */
 .avatar {
-  @apply rounded-full object-cover;
+  @apply rounded-full object-cover border-2 border-highland-100;
+}
+
+/* 高原农业特色样式 */
+.highland-title {
+  @apply text-2xl font-bold text-highland-800 mb-4;
+}
+
+.highland-subtitle {
+  @apply text-xl font-semibold text-highland-700 mb-3;
+}
+
+.highland-tag {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-highland-100 text-highland-800;
+}
+
+.crop-tag {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-crop-100 text-crop-800;
+}
+
+.soil-tag {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-soil-100 text-soil-800;
+}
+
+.highland-badge {
+  @apply absolute top-2 right-2 bg-highland-500 text-white text-xs px-2 py-1 rounded-md font-bold;
+}
+
+.highland-link {
+  @apply text-highland-600 hover:text-highland-800 font-medium transition duration-200;
 } 

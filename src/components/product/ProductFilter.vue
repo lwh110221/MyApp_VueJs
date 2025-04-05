@@ -1,10 +1,16 @@
 <template>
-  <div class="product-filter">
-    <div class="filter-section">
+  <div class="product-filter" :class="{ 'mobile-collapsed': isMobile && !isExpanded }">
+    <div class="filter-header" @click="toggleMobileExpand">
       <h3 class="filter-title">
         <i class="fa-solid fa-filter"></i> 过滤条件
       </h3>
+      <!-- 移动端展开/折叠按钮 -->
+      <button v-if="isMobile" class="expand-toggle-btn">
+        <i :class="isExpanded ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'"></i>
+      </button>
+    </div>
 
+    <div class="filter-content" :class="{ 'mobile-hidden': isMobile && !isExpanded }">
       <!-- 分类过滤 -->
       <div class="filter-group">
         <h4 class="filter-group-title">分类</h4>
@@ -101,11 +107,36 @@
         </button>
       </div>
     </div>
+
+    <!-- 移动端快速筛选工具栏 -->
+    <div v-if="isMobile && !isExpanded" class="mobile-quick-filters">
+      <div class="quick-filter-badges">
+        <div v-if="selectedCategory" class="filter-badge" @click="toggleMobileExpand">
+          <span>分类: {{ getCategoryName(selectedCategory) }}</span>
+          <i class="fa-solid fa-xmark" @click.stop="selectCategory(null)"></i>
+        </div>
+        <div v-if="minPrice || maxPrice" class="filter-badge" @click="toggleMobileExpand">
+          <span>价格: {{ formatPriceRange() }}</span>
+          <i class="fa-solid fa-xmark" @click.stop="clearPriceFilter"></i>
+        </div>
+        <div v-if="activeSortOption !== 'created_at_desc'" class="filter-badge" @click="toggleMobileExpand">
+          <span>排序: {{ getSortOptionText() }}</span>
+          <i class="fa-solid fa-xmark" @click.stop="resetSortOption"></i>
+        </div>
+        <div v-if="keyword" class="filter-badge" @click="toggleMobileExpand">
+          <span>关键词: {{ keyword }}</span>
+          <i class="fa-solid fa-xmark" @click.stop="clearKeyword"></i>
+        </div>
+      </div>
+      <button v-if="hasActiveFilters" @click="resetFilters" class="mobile-reset-btn">
+        <i class="fa-solid fa-rotate"></i>
+      </button>
+    </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useProductStore } from '@/stores'
 
 export default {
@@ -136,9 +167,34 @@ export default {
     const sortBy = ref('created_at')
     const sortOrder = ref('desc')
 
+    // 移动端相关状态
+    const isMobile = ref(window.innerWidth < 768)
+    const isExpanded = ref(false)
+
+    // 监听窗口大小变化
+    const handleResize = () => {
+      isMobile.value = window.innerWidth < 768
+      if (!isMobile.value) {
+        isExpanded.value = false
+      }
+    }
+
+    // 切换移动端展开/折叠状态
+    const toggleMobileExpand = () => {
+      if (isMobile.value) {
+        isExpanded.value = !isExpanded.value
+      }
+    }
+
     // 获取激活的排序选项，用于高亮
     const activeSortOption = computed(() => {
       return `${sortBy.value}_${sortOrder.value}`
+    })
+
+    // 判断是否有激活的过滤条件
+    const hasActiveFilters = computed(() => {
+      return selectedCategory.value || keyword.value || minPrice.value || maxPrice.value ||
+        (sortBy.value !== 'created_at' || sortOrder.value !== 'desc')
     })
 
     // 获取分类列表
@@ -153,16 +209,55 @@ export default {
       }
     }
 
+    // 获取分类名称
+    const getCategoryName = (categoryId) => {
+      const category = categories.value.find(c => c.id == categoryId)
+      return category ? category.name : '未知分类'
+    }
+
+    // 获取当前排序方式的文本
+    const getSortOptionText = () => {
+      if (sortBy.value === 'created_at' && sortOrder.value === 'desc') return '最新上架'
+      if (sortBy.value === 'price' && sortOrder.value === 'asc') return '价格低到高'
+      if (sortBy.value === 'price' && sortOrder.value === 'desc') return '价格高到低'
+      return '默认排序'
+    }
+
+    // 格式化价格范围
+    const formatPriceRange = () => {
+      if (minPrice.value && maxPrice.value) {
+        return `${minPrice.value}-${maxPrice.value}元`
+      } else if (minPrice.value) {
+        return `≥${minPrice.value}元`
+      } else if (maxPrice.value) {
+        return `≤${maxPrice.value}元`
+      }
+      return ''
+    }
+
     // 选择分类
     const selectCategory = (categoryId) => {
       selectedCategory.value = categoryId
       applyFilters()
+      if (isMobile.value && isExpanded.value) {
+        isExpanded.value = false
+      }
     }
 
     // 设置排序方式
     const setSortOption = (by, order) => {
       sortBy.value = by
       sortOrder.value = order
+      applyFilters()
+      if (isMobile.value && isExpanded.value) {
+        isExpanded.value = false
+      }
+    }
+
+    // 重置排序选项
+    const resetSortOption = () => {
+      sortBy.value = 'created_at'
+      sortOrder.value = 'desc'
       applyFilters()
     }
 
@@ -176,6 +271,22 @@ export default {
         maxPrice.value = temp
       }
 
+      applyFilters()
+      if (isMobile.value && isExpanded.value) {
+        isExpanded.value = false
+      }
+    }
+
+    // 清除价格过滤
+    const clearPriceFilter = () => {
+      minPrice.value = ''
+      maxPrice.value = ''
+      applyFilters()
+    }
+
+    // 清除关键词
+    const clearKeyword = () => {
+      keyword.value = ''
       applyFilters()
     }
 
@@ -201,11 +312,20 @@ export default {
       sortOrder.value = 'desc'
 
       applyFilters()
+      if (isMobile.value && isExpanded.value) {
+        isExpanded.value = false
+      }
     }
 
-    // 组件挂载时获取分类
+    // 组件挂载时获取分类和设置窗口大小监听
     onMounted(() => {
       fetchCategories()
+      window.addEventListener('resize', handleResize)
+    })
+
+    // 组件卸载时清除窗口大小监听
+    onUnmounted(() => {
+      window.removeEventListener('resize', handleResize)
     })
 
     return {
@@ -215,11 +335,21 @@ export default {
       minPrice,
       maxPrice,
       activeSortOption,
+      isMobile,
+      isExpanded,
+      hasActiveFilters,
       selectCategory,
       setSortOption,
+      resetSortOption,
       applyPriceFilter,
+      clearPriceFilter,
+      clearKeyword,
       applyFilters,
-      resetFilters
+      resetFilters,
+      toggleMobileExpand,
+      getCategoryName,
+      getSortOptionText,
+      formatPriceRange
     }
   }
 }
@@ -230,19 +360,46 @@ export default {
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.filter-header {
+  padding: 15px 20px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filter-content {
+  padding: 0 20px 20px;
 }
 
 .filter-title {
   font-size: 1.1rem;
   font-weight: 600;
-  margin-bottom: 20px;
+  margin: 0;
   color: #333;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.expand-toggle-btn {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.expand-toggle-btn:hover {
+  color: #4caf50;
 }
 
 .filter-group {
@@ -286,11 +443,12 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .price-input {
   width: 70px;
-  padding: 6px 8px;
+  padding: 8px 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 0.9rem;
@@ -301,7 +459,7 @@ export default {
 }
 
 .apply-btn {
-  padding: 6px 12px;
+  padding: 8px 12px;
   background-color: #4caf50;
   color: white;
   border: none;
@@ -390,5 +548,116 @@ export default {
 .reset-btn:hover {
   background-color: #e0e0e0;
   color: #333;
+}
+
+/* 移动端快速筛选样式 */
+.mobile-quick-filters {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  gap: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.quick-filter-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+}
+
+.filter-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #e8f5e9;
+  color: #388e3c;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.filter-badge i {
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 3px;
+}
+
+.filter-badge i:hover {
+  color: #d32f2f;
+}
+
+.mobile-reset-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  color: #666;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.mobile-reset-btn:hover {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+/* 移动端响应式样式 */
+@media (max-width: 768px) {
+  .product-filter {
+    position: relative;
+    margin-bottom: 10px;
+  }
+
+  .mobile-collapsed {
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .mobile-hidden {
+    display: none;
+  }
+
+  .filter-header {
+    padding: 12px 15px;
+  }
+
+  .filter-title {
+    font-size: 1rem;
+  }
+
+  .price-filter {
+    gap: 5px;
+  }
+
+  .price-input {
+    width: 60px;
+    padding: 6px 8px;
+  }
+
+  .apply-btn {
+    padding: 6px 10px;
+  }
+
+  .sort-options {
+    gap: 8px;
+  }
+
+  .sort-item {
+    padding: 5px 10px;
+    font-size: 0.85rem;
+  }
+
+  .search-input {
+    padding: 8px 10px;
+  }
+
+  .search-btn {
+    padding: 8px 10px;
+  }
 }
 </style>

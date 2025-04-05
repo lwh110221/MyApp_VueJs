@@ -1,5 +1,12 @@
 <template>
   <div class="ai-chat-container">
+    <!-- 添加遮罩层，点击时关闭侧边栏 -->
+    <div
+      v-if="isSidebarOpen"
+      class="sidebar-overlay"
+      @click="toggleSidebar"
+    ></div>
+
     <div class="sessions-sidebar" :class="{ 'mobile-open': isSidebarOpen }">
       <div class="sidebar-header">
         <h2>我的对话</h2>
@@ -10,6 +17,10 @@
           <button class="settings-btn" @click="showSettings = !showSettings">
             <i class="fas fa-cog"></i>
           </button>
+          <!-- 添加关闭按钮，在移动端显示 -->
+          <button class="close-sidebar-btn" @click="toggleSidebar">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
       </div>
 
@@ -17,6 +28,10 @@
         <div class="setting-item">
           <input type="checkbox" id="autoCreateSession" v-model="autoCreateOnEnter">
           <label for="autoCreateSession">每次进入自动创建新对话</label>
+        </div>
+        <div class="setting-item">
+          <input type="checkbox" id="preserveMarkdown" v-model="preserveMarkdown">
+          <label for="preserveMarkdown">实时渲染Markdown</label>
         </div>
         <div class="setting-item">
           <input type="checkbox" id="typingEffect" v-model="typingEnabled">
@@ -30,10 +45,6 @@
             <option value="30">适中</option>
             <option value="50">慢速</option>
           </select>
-        </div>
-        <div class="setting-item">
-          <input type="checkbox" id="preserveMarkdown" v-model="preserveMarkdown">
-          <label for="preserveMarkdown">实时渲染Markdown</label>
         </div>
       </div>
 
@@ -1301,6 +1312,13 @@ textarea:focus {
   .message-content {
     max-width: 85%;
   }
+
+  /* 在移动端显示关闭按钮 */
+  .close-sidebar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 /* 消息数量提醒和警告样式 */
@@ -1510,5 +1528,34 @@ textarea:focus {
 
 .markdown-content table tr:nth-child(even) {
   background-color: #f9f9f9;
+}
+
+/* 添加遮罩层样式 */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* 关闭按钮样式 */
+.close-sidebar-btn {
+  display: none;
+  background: #e57373;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.close-sidebar-btn:hover {
+  background: #ef5350;
 }
 </style>

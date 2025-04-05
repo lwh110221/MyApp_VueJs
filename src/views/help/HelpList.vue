@@ -1,8 +1,22 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
+  <div class="container mx-auto px-4 py-6">
+    <!-- 移动端过滤器切换 -->
+    <div class="md:hidden mb-4">
+      <button
+        @click="toggleMobileFilters"
+        class="w-full flex items-center justify-between bg-white px-4 py-3 rounded-lg shadow">
+        <span class="font-medium">筛选与分类</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform" :class="{'rotate-180': showMobileFilters}" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
+      </button>
+    </div>
+
     <div class="flex flex-col md:flex-row justify-between items-start gap-6">
       <!-- 左侧侧边栏 -->
-      <div class="w-full md:w-64 sticky top-20">
+      <div
+        class="w-full md:w-64 md:sticky md:top-20 overflow-hidden transition-all duration-300"
+        :class="{'max-h-0 mb-0': !showMobileFilters && isMobileDevice, 'max-h-[1000px] mb-6': showMobileFilters || !isMobileDevice}">
         <div class="bg-white rounded-lg shadow p-4 mb-6">
           <h3 class="text-lg font-semibold mb-3">专家求助</h3>
           <p class="text-gray-600 text-sm">
@@ -72,7 +86,7 @@
       </div>
 
       <!-- 右侧内容 -->
-      <div class="flex-1">
+      <div class="flex-1 w-full">
         <!-- 搜索栏 -->
         <div class="bg-white rounded-lg shadow p-4 mb-6">
           <div class="flex">
@@ -153,16 +167,16 @@
                 </div>
               </div>
 
-              <div class="mt-3 flex justify-between items-center text-sm text-gray-500">
-                <div class="flex items-center">
+              <div class="mt-3 flex flex-wrap justify-between items-center text-sm text-gray-500 gap-y-2">
+                <div class="flex flex-wrap items-center gap-y-1">
                   <router-link :to="`/user/${post.user_id}`" class="flex items-center hover:text-green-600">
                     <img :src="getUserAvatar(post.author_avatar)" class="w-6 h-6 rounded-full mr-2 object-cover" alt="用户头像" />
                     <span>{{ post.author_name }}</span>
                   </router-link>
-                  <span class="mx-2">·</span>
-                  <span>{{ formatDate(post.created_at) }}</span>
-                  <span class="mx-2">·</span>
-                  <span>{{ post.category_name }}</span>
+                  <span class="mx-2 hidden sm:inline">·</span>
+                  <span class="sm:mx-0 w-full sm:w-auto sm:inline">{{ formatDate(post.created_at) }}</span>
+                  <span class="mx-2 hidden sm:inline">·</span>
+                  <span class="w-full sm:w-auto sm:inline">{{ post.category_name }}</span>
                 </div>
                 <div class="flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -177,7 +191,7 @@
 
         <!-- 分页 -->
         <div v-if="helpStore.pagination.totalPages > 1" class="flex justify-center mt-6">
-          <div class="flex space-x-1">
+          <div class="flex flex-wrap justify-center space-x-1 space-y-1">
             <button
               v-for="page in getPageNumbers()"
               :key="page"
@@ -197,7 +211,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
 import { useHelpStore } from '@/stores/help';
 import { storeToRefs } from 'pinia';
 import { useRouter, useRoute } from 'vue-router';
@@ -221,6 +235,20 @@ export default {
       0: '已关闭',
       1: '开放中',
       2: '已关闭'
+    };
+
+    // 移动端筛选器控制
+    const showMobileFilters = ref(false);
+    const isMobileDevice = ref(window.innerWidth < 768);
+
+    // 切换移动端筛选器显示状态
+    const toggleMobileFilters = () => {
+      showMobileFilters.value = !showMobileFilters.value;
+    };
+
+    // 监听窗口大小变化
+    const handleResize = () => {
+      isMobileDevice.value = window.innerWidth < 768;
     };
 
     // 初始化
@@ -254,6 +282,9 @@ export default {
 
       // 获取帖子列表
       await helpStore.fetchPosts();
+
+      // 添加窗口大小变化监听
+      window.addEventListener('resize', handleResize);
     });
 
     // 监听筛选条件变化，更新URL参数
@@ -280,6 +311,9 @@ export default {
       selectedCategory.value = categoryId;
       helpStore.setSearchParams({ category_id: categoryId });
       helpStore.fetchPosts();
+      if (isMobileDevice.value) {
+        showMobileFilters.value = false;
+      }
     };
 
     // 选择状态
@@ -287,6 +321,9 @@ export default {
       selectedStatus.value = status;
       helpStore.setSearchParams({ status });
       helpStore.fetchPosts();
+      if (isMobileDevice.value) {
+        showMobileFilters.value = false;
+      }
     };
 
     // 搜索
@@ -395,6 +432,11 @@ export default {
       return `${baseUrl}${profilePicture}`;
     };
 
+    // 组件卸载时移除事件监听
+    const onUnmounted = () => {
+      window.removeEventListener('resize', handleResize);
+    };
+
     return {
       helpStore,
       searchKeyword,
@@ -411,7 +453,10 @@ export default {
       formatDate,
       getImageUrl,
       getDefaultAvatar,
-      getUserAvatar
+      getUserAvatar,
+      showMobileFilters,
+      isMobileDevice,
+      toggleMobileFilters,
     };
   }
 };

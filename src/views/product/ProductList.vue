@@ -1,99 +1,118 @@
 <template>
-  <div class="product-list-page">
-    <div class="container">
-      <div class="page-header">
-        <h1 class="page-title">农产品交易平台</h1>
-        <p class="page-subtitle">新鲜、健康、安全的农产品直供平台</p>
+  <div class="product-page">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <h1 class="page-title">农产品交易市场</h1>
+      <p class="page-subtitle">直连农户，品质保障</p>
+    </div>
 
-        <!-- 农户与商家操作入口 -->
-        <div v-if="isFarmerOrDealer" class="seller-actions">
-          <router-link to="/products/create" class="action-button publish-btn">
-            <i class="fa-solid fa-plus"></i> 发布农产品
-          </router-link>
-          <router-link to="/my-products" class="action-button my-products-btn">
-            <i class="fa-solid fa-list"></i> 我的商品
-          </router-link>
-        </div>
+    <!-- 移动端操作栏 -->
+    <div class="mobile-action-bar" v-if="isMobileView">
+      <button class="create-product-btn" v-if="isUserFarmer" @click="goToCreateProduct">
+        <i class="fa-solid fa-plus"></i> 发布农产品
+      </button>
+      <div class="mobile-search-box">
+        <input
+          type="text"
+          v-model="mobileSearchKeyword"
+          @keyup.enter="applyMobileSearch"
+          placeholder="搜索农产品"
+          class="mobile-search-input"
+        />
+        <button @click="applyMobileSearch" class="mobile-search-btn">
+          <i class="fa-solid fa-search"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="product-container">
+      <!-- 过滤侧边栏 -->
+      <div class="product-sidebar" :class="{ 'mobile-sidebar': isMobileView }">
+        <ProductFilter
+          :initialCategory="initialFilters.category_id"
+          :initialKeyword="initialFilters.keyword"
+          @filter-change="handleFilterChange"
+        />
       </div>
 
-      <div class="main-content">
-        <!-- 左侧筛选栏 -->
-        <div class="filter-sidebar">
-          <ProductFilter
-            :initialCategory="$route.query.category_id"
-            :initialKeyword="$route.query.keyword"
-            @filter-change="handleFilterChange"
+      <!-- 产品列表容器 -->
+      <div class="product-list-container">
+        <!-- 桌面版操作栏 -->
+        <div class="action-bar" v-if="!isMobileView">
+          <button class="create-product-btn" v-if="isUserFarmer" @click="goToCreateProduct">
+            <i class="fa-solid fa-plus"></i> 发布农产品
+          </button>
+        </div>
+
+        <!-- 加载状态 -->
+        <div v-if="productStore.loading" class="loading-container">
+          <div class="loading-spinner"></div>
+          <p>正在加载农产品...</p>
+        </div>
+
+        <!-- 搜索结果提示 -->
+        <div v-else-if="hasSearchFilters && productStore.products.length > 0" class="search-result-info">
+          <p>
+            找到 {{ productStore.totalProducts }} 个符合条件的农产品
+            <button @click="clearSearch" class="clear-search-btn">
+              <i class="fa-solid fa-xmark"></i> 清除筛选
+            </button>
+          </p>
+        </div>
+
+        <!-- 空状态 -->
+        <div v-else-if="productStore.products.length === 0" class="empty-state">
+          <i class="fa-solid fa-seedling empty-icon"></i>
+          <h3>暂无农产品</h3>
+          <p>{{ emptyStateMessage }}</p>
+          <button v-if="hasSearchFilters" @click="clearSearch" class="clear-search-btn">
+            <i class="fa-solid fa-xmark"></i> 清除筛选
+          </button>
+        </div>
+
+        <!-- 产品列表 -->
+        <div v-if="!productStore.loading && productStore.products.length > 0" class="product-list" :class="{ 'mobile-grid': isMobileView }">
+          <ProductCard
+            v-for="product in productStore.products"
+            :key="product.id"
+            :product="product"
+            :isInCart="isProductInCart(product.id)"
+            :class="{ 'mobile-card': isMobileView }"
           />
         </div>
 
-        <!-- 右侧产品列表 -->
-        <div class="product-list-container">
-          <!-- 搜索结果提示 -->
-          <div v-if="searchActive" class="search-results-info">
-            {{ searchInfo }}
-            <button @click="clearSearch" class="clear-search-btn">
-              <i class="fa-solid fa-times"></i> 清除搜索
-            </button>
-          </div>
+        <!-- 分页 -->
+        <div
+          v-if="productStore.products.length > 0 && productStore.totalPages > 1"
+          class="pagination"
+        >
+          <button
+            class="pagination-btn"
+            :disabled="currentPage === 1"
+            @click="changePage(currentPage - 1)"
+          >
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
 
-          <!-- 加载中状态 -->
-          <div v-if="loading" class="loading-container">
-            <div class="loading-spinner">
-              <i class="fa-solid fa-spinner fa-spin"></i>
-              <span>加载中...</span>
-            </div>
-          </div>
-
-          <!-- 空状态 -->
-          <div v-else-if="products.length === 0" class="empty-state">
-            <div class="empty-state-icon">
-              <i class="fa-solid fa-basket-shopping"></i>
-            </div>
-            <h3 class="empty-state-title">未找到符合条件的产品</h3>
-            <p class="empty-state-message">
-              尝试使用其他过滤条件或清除搜索
-            </p>
-            <button @click="resetFilters" class="reset-btn">
-              <i class="fa-solid fa-rotate"></i> 清除所有过滤
-            </button>
-          </div>
-
-          <!-- 产品列表 -->
-          <div v-else class="product-list">
-            <div
-              v-for="product in products"
-              :key="product.id"
-              class="product-card-wrapper"
-            >
-              <ProductCard
-                :product="product"
-                :isInCart="isProductInCart(product.id)"
-              />
-            </div>
-          </div>
-
-          <!-- 分页 -->
-          <div v-if="products.length > 0" class="pagination">
+          <div class="page-numbers">
             <button
-              class="pagination-button prev"
-              :disabled="currentPage <= 1"
-              @click="changePage(currentPage - 1)"
+              v-for="page in displayedPages"
+              :key="page"
+              class="page-number"
+              :class="{ active: currentPage === page }"
+              @click="changePage(page)"
             >
-              <i class="fa-solid fa-chevron-left"></i> 上一页
-            </button>
-
-            <div class="pagination-info">
-              第 {{ currentPage }} 页，共 {{ totalPages }} 页
-            </div>
-
-            <button
-              class="pagination-button next"
-              :disabled="currentPage >= totalPages"
-              @click="changePage(currentPage + 1)"
-            >
-              下一页 <i class="fa-solid fa-chevron-right"></i>
+              {{ page }}
             </button>
           </div>
+
+          <button
+            class="pagination-btn"
+            :disabled="currentPage === productStore.totalPages"
+            @click="changePage(currentPage + 1)"
+          >
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -101,8 +120,8 @@
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useProductStore, useCartStore } from '@/stores'
 import { useIdentityStore } from '@/stores'
 import ProductFilter from '@/components/product/ProductFilter.vue'
@@ -110,37 +129,21 @@ import ProductCard from '@/components/product/ProductCard.vue'
 
 export default {
   name: 'ProductList',
-
   components: {
     ProductFilter,
     ProductCard
   },
 
   setup() {
-    const route = useRoute()
     const router = useRouter()
+    const route = useRoute()
     const productStore = useProductStore()
     const cartStore = useCartStore()
     const identityStore = useIdentityStore()
 
-    const loading = ref(false)
-    const products = ref([])
+    // 响应式状态
     const currentPage = ref(1)
-    const pageSize = ref(12)
-    const totalItems = ref(0)
-
-    // 分页计算
-    const totalPages = computed(() => {
-      return Math.ceil(totalItems.value / pageSize.value)
-    })
-
-    // 是否农户或商家身份
-    const isFarmerOrDealer = computed(() => {
-      return identityStore.hasIdentity('FARMER') || identityStore.hasIdentity('DEALER')
-    })
-
-    // 当前搜索/过滤状态
-    const filters = reactive({
+    const initialFilters = reactive({
       category_id: null,
       keyword: '',
       min_price: null,
@@ -148,279 +151,327 @@ export default {
       sort_by: 'created_at',
       sort_order: 'desc'
     })
+    const mobileSearchKeyword = ref('')
+    const isMobileView = ref(window.innerWidth < 768)
 
-    // 是否在搜索/过滤中
-    const searchActive = computed(() => {
-      return filters.category_id || filters.keyword || filters.min_price || filters.max_price ||
-        (filters.sort_by !== 'created_at' || filters.sort_order !== 'desc')
+    // 计算属性
+    const isUserFarmer = computed(() => {
+      return identityStore.hasIdentity('FARMER')
     })
 
-    // 搜索信息文本
-    const searchInfo = computed(() => {
-      let info = '当前搜索条件: '
-      const conditions = []
-
-      if (filters.keyword) {
-        conditions.push(`关键词"${filters.keyword}"`)
-      }
-
-      if (filters.category_id) {
-        const category = productStore.categories.find(c => c.id == filters.category_id)
-        if (category) {
-          conditions.push(`分类"${category.name}"`)
-        }
-      }
-
-      if (filters.min_price && filters.max_price) {
-        conditions.push(`价格 ${filters.min_price} - ${filters.max_price} 元`)
-      } else if (filters.min_price) {
-        conditions.push(`价格 >= ${filters.min_price} 元`)
-      } else if (filters.max_price) {
-        conditions.push(`价格 <= ${filters.max_price} 元`)
-      }
-
-      if (conditions.length === 0) {
-        return '当前显示所有产品'
-      }
-
-      return info + conditions.join('，')
+    const hasSearchFilters = computed(() => {
+      return (
+        initialFilters.category_id ||
+        initialFilters.keyword ||
+        initialFilters.min_price ||
+        initialFilters.max_price ||
+        (initialFilters.sort_by !== 'created_at' || initialFilters.sort_order !== 'desc')
+      )
     })
 
-    // 检查产品是否在购物车中
+    const emptyStateMessage = computed(() => {
+      if (hasSearchFilters.value) {
+        return '没有找到符合条件的农产品，请尝试其他筛选条件'
+      }
+      return '目前市场上暂无农产品，请稍后再来'
+    })
+
+    // 计算要显示的页码
+    const displayedPages = computed(() => {
+      const total = productStore.totalPages
+      const current = currentPage.value
+
+      if (total <= 5) {
+        return Array.from({ length: total }, (_, i) => i + 1)
+      }
+
+      if (current <= 3) {
+        return [1, 2, 3, 4, 5]
+      }
+
+      if (current >= total - 2) {
+        return [total - 4, total - 3, total - 2, total - 1, total]
+      }
+
+      return [current - 2, current - 1, current, current + 1, current + 2]
+    })
+
+    // 判断产品是否在购物车中
     const isProductInCart = (productId) => {
       return cartStore.cartItems.some(item => item.product_id === productId)
     }
 
-    // 获取产品列表
-    const fetchProducts = async (resetPage = false) => {
-      if (resetPage) {
-        currentPage.value = 1
-      }
-
-      loading.value = true
-
-      try {
-        const params = {
-          ...filters,
-          page: currentPage.value,
-          limit: pageSize.value
-        }
-
-        // 清理空值
-        Object.keys(params).forEach(key => {
-          if (params[key] === null || params[key] === '') {
-            delete params[key]
-          }
-        })
-
-        await productStore.fetchProducts(params)
-        products.value = productStore.products
-        totalItems.value = productStore.pagination.total
-      } catch (error) {
-        console.error('获取产品列表失败:', error)
-      } finally {
-        loading.value = false
-      }
+    // 处理窗口大小变化
+    const handleResize = () => {
+      isMobileView.value = window.innerWidth < 768
     }
 
-    // 处理过滤器变化
-    const handleFilterChange = (newFilters) => {
-      Object.assign(filters, newFilters)
-
-      // 更新URL查询参数
-      updateRouteQuery()
-
-      // 重置到第一页并获取数据
-      fetchProducts(true)
+    // 应用移动端搜索
+    const applyMobileSearch = () => {
+      if (mobileSearchKeyword.value.trim()) {
+        initialFilters.keyword = mobileSearchKeyword.value.trim()
+        fetchProducts()
+      }
     }
 
     // 更新路由查询参数
     const updateRouteQuery = () => {
-      // 准备查询参数
       const query = {}
-      Object.keys(filters).forEach(key => {
-        if (filters[key] !== null && filters[key] !== '') {
-          query[key] = filters[key]
+
+      if (initialFilters.category_id) {
+        query.category_id = initialFilters.category_id
+      }
+
+      if (initialFilters.keyword) {
+        query.keyword = initialFilters.keyword
+      }
+
+      if (initialFilters.min_price) {
+        query.min_price = initialFilters.min_price
+      }
+
+      if (initialFilters.max_price) {
+        query.max_price = initialFilters.max_price
+      }
+
+      if (initialFilters.sort_by !== 'created_at' || initialFilters.sort_order !== 'desc') {
+        query.sort_by = initialFilters.sort_by
+        query.sort_order = initialFilters.sort_order
+      }
+
+      if (currentPage.value > 1) {
+        query.page = currentPage.value
+      }
+
+      router.replace({ query })
+    }
+
+    // 获取产品列表
+    const fetchProducts = () => {
+      const params = {
+        page: currentPage.value,
+        ...initialFilters
+      }
+
+      // 清理空值参数
+      Object.keys(params).forEach(key => {
+        if (params[key] === null || params[key] === '') {
+          delete params[key]
         }
       })
 
-      // 添加分页参数
-      query.page = currentPage.value
+      console.log('Fetching products with params:', params);
 
-      // 更新路由
-      router.replace({ query })
+      productStore.fetchProducts(params)
+        .then(() => {
+          console.log('Products fetched:', productStore.products.length);
+          console.log('Pagination:', productStore.pagination);
+          console.log('Total pages:', productStore.totalPages);
+        })
+        .catch(error => {
+          console.error('Error fetching products:', error);
+        });
+
+      updateRouteQuery()
     }
 
     // 切换页码
     const changePage = (page) => {
+      if (page < 1 || page > productStore.totalPages) return
+
       currentPage.value = page
-      updateRouteQuery()
       fetchProducts()
 
-      // 滚动到顶部
+      // 滚动到页面顶部
       window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+
+    // 过滤器变更处理
+    const handleFilterChange = (filters) => {
+      Object.assign(initialFilters, filters)
+      currentPage.value = 1
+      fetchProducts()
     }
 
     // 清除搜索
     const clearSearch = () => {
-      Object.assign(filters, {
-        category_id: null,
-        keyword: '',
-        min_price: null,
-        max_price: null,
-        sort_by: 'created_at',
-        sort_order: 'desc'
-      })
+      initialFilters.category_id = null
+      initialFilters.keyword = ''
+      initialFilters.min_price = null
+      initialFilters.max_price = null
+      initialFilters.sort_by = 'created_at'
+      initialFilters.sort_order = 'desc'
+      mobileSearchKeyword.value = ''
 
-      updateRouteQuery()
-      fetchProducts(true)
+      currentPage.value = 1
+      fetchProducts()
     }
 
-    // 重置过滤器
+    // 重置过滤条件
     const resetFilters = () => {
-      clearSearch()
       productStore.resetFilters()
+      clearSearch()
     }
 
-    // 从URL参数加载过滤条件
+    // 跳转到创建产品页面
+    const goToCreateProduct = () => {
+      router.push('/product/create')
+    }
+
+    // 从URL加载过滤条件
     const loadFiltersFromQuery = () => {
-      const query = route.query
+      const { query } = route
+
+      if (query.category_id) {
+        initialFilters.category_id = parseInt(query.category_id) || query.category_id
+      }
+
+      if (query.keyword) {
+        initialFilters.keyword = query.keyword
+        mobileSearchKeyword.value = query.keyword
+      }
+
+      if (query.min_price) {
+        initialFilters.min_price = query.min_price
+      }
+
+      if (query.max_price) {
+        initialFilters.max_price = query.max_price
+      }
+
+      if (query.sort_by) {
+        initialFilters.sort_by = query.sort_by
+      }
+
+      if (query.sort_order) {
+        initialFilters.sort_order = query.sort_order
+      }
 
       if (query.page) {
         currentPage.value = parseInt(query.page) || 1
       }
-
-      Object.keys(filters).forEach(key => {
-        if (query[key] !== undefined) {
-          filters[key] = query[key]
-        }
-      })
     }
 
-    // 监听路由变化
-    watch(() => route.query, () => {
+    // 监听路由查询参数变化
+    watch(
+      () => route.query,
+      () => {
+        loadFiltersFromQuery()
+        fetchProducts()
+      }
+    )
+
+    // 组件挂载
+    onMounted(() => {
+      // 获取购物车数据
+      cartStore.fetchCart()
+
+      // 加载过滤条件并获取产品
       loadFiltersFromQuery()
       fetchProducts()
-    })
 
-    // 组件挂载时
-    onMounted(async () => {
-      // 获取购物车数据（如果还未获取）
-      if (cartStore.cartItems.length === 0) {
-        await cartStore.fetchCart()
-      }
-
-      // 获取分类数据
-      if (productStore.categories.length === 0) {
-        await productStore.fetchCategories()
-      }
+      // 添加窗口大小变化监听
+      window.addEventListener('resize', handleResize)
 
       // 获取用户身份信息
       if (localStorage.getItem('token')) {
         try {
-          await identityStore.fetchUserIdentities()
+          identityStore.fetchUserIdentities()
         } catch (error) {
           console.error('获取用户身份信息失败:', error)
         }
       }
+    })
 
-      // 加载URL过滤条件并获取产品
-      loadFiltersFromQuery()
-      fetchProducts()
+    // 组件卸载
+    onUnmounted(() => {
+      window.removeEventListener('resize', handleResize)
     })
 
     return {
-      loading,
-      products,
       currentPage,
-      totalPages,
-      searchActive,
-      searchInfo,
+      initialFilters,
+      productStore,
+      isUserFarmer,
       isProductInCart,
+      hasSearchFilters,
+      emptyStateMessage,
+      isMobileView,
+      mobileSearchKeyword,
+      displayedPages,
       handleFilterChange,
       changePage,
       clearSearch,
       resetFilters,
-      isFarmerOrDealer
+      goToCreateProduct,
+      applyMobileSearch
     }
   }
 }
 </script>
 
 <style scoped>
-.product-list-page {
-  padding: 40px 0;
-  min-height: calc(100vh - 60px);
-  background-color: #f9f9f9;
-}
-
-.container {
-  width: 100%;
+.product-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 15px;
+  padding: 20px;
 }
 
 .page-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 30px;
 }
 
 .page-title {
   font-size: 2rem;
-  color: #333;
-  margin-bottom: 10px;
+  font-weight: 700;
+  color: #2e7d32;
+  margin-bottom: 5px;
 }
 
 .page-subtitle {
   font-size: 1.1rem;
-  color: #666;
-  margin-bottom: 15px;
+  color: #555;
 }
 
-.seller-actions {
+.mobile-action-bar {
   display: flex;
   justify-content: center;
-  gap: 15px;
-  margin-top: 20px;
-}
-
-.action-button {
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: 4px;
-  font-weight: 500;
-  transition: all 0.3s;
-  text-decoration: none;
+  margin-bottom: 15px;
+  gap: 10px;
 }
 
-.publish-btn {
+.mobile-search-box {
+  display: flex;
+  flex: 1;
+  max-width: 80%;
+}
+
+.mobile-search-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-right: none;
+  border-radius: 20px 0 0 20px;
+  font-size: 0.9rem;
+}
+
+.mobile-search-btn {
+  padding: 8px 12px;
   background-color: #4caf50;
   color: white;
+  border: none;
+  border-radius: 0 20px 20px 0;
+  cursor: pointer;
 }
 
-.publish-btn:hover {
-  background-color: #388e3c;
-}
-
-.my-products-btn {
-  background-color: #ff9800;
-  color: white;
-}
-
-.my-products-btn:hover {
-  background-color: #f57c00;
-}
-
-.main-content {
+.product-container {
   display: flex;
-  gap: 30px;
+  gap: 20px;
 }
 
-.filter-sidebar {
+.product-sidebar {
   width: 280px;
   flex-shrink: 0;
 }
@@ -429,50 +480,51 @@ export default {
   flex: 1;
 }
 
-.search-results-info {
-  background-color: #f0f9ff;
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 20px;
+.action-bar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: #555;
+  justify-content: flex-end;
+  margin-bottom: 20px;
 }
 
-.clear-search-btn {
-  background-color: transparent;
+.create-product-btn {
+  padding: 10px 16px;
+  background-color: #4caf50;
+  color: white;
   border: none;
-  color: #1890ff;
+  border-radius: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.9rem;
+  gap: 6px;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
-.clear-search-btn:hover {
-  text-decoration: underline;
+.create-product-btn:hover {
+  background-color: #388e3c;
 }
 
 .loading-container {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   height: 300px;
 }
 
 .loading-spinner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-  color: #666;
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #4caf50;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
 }
 
-.loading-spinner i {
-  font-size: 2rem;
-  color: #4caf50;
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .empty-state {
@@ -481,130 +533,188 @@ export default {
   align-items: center;
   justify-content: center;
   height: 300px;
-  text-align: center;
-  background-color: #fff;
+  background-color: white;
   border-radius: 8px;
-  padding: 30px;
+  padding: 20px;
+  text-align: center;
 }
 
-.empty-state-icon {
+.empty-icon {
   font-size: 3rem;
-  color: #ddd;
+  color: #ccc;
   margin-bottom: 20px;
 }
 
-.empty-state-title {
-  font-size: 1.2rem;
-  margin-bottom: 10px;
-  color: #333;
-}
-
-.empty-state-message {
-  color: #666;
+.search-result-info {
+  background-color: #e8f5e9;
+  padding: 12px 16px;
+  border-radius: 8px;
   margin-bottom: 20px;
-}
-
-.reset-btn {
-  background-color: #4caf50;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  cursor: pointer;
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  transition: background-color 0.3s;
 }
 
-.reset-btn:hover {
-  background-color: #388e3c;
+.clear-search-btn {
+  background-color: white;
+  color: #666;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  margin-left: 10px;
+}
+
+.clear-search-btn:hover {
+  background-color: #f5f5f5;
 }
 
 .product-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   margin-bottom: 30px;
 }
 
-.product-card-wrapper {
-  height: 100%;
-}
-
 .pagination {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  margin-top: 40px;
+  gap: 10px;
+  margin-top: 30px;
+  margin-bottom: 20px;
 }
 
-.pagination-button {
-  padding: 10px 16px;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  cursor: pointer;
+.page-numbers {
+  display: flex;
+  gap: 8px;
+}
+
+.page-number,
+.pagination-btn {
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  transition: all 0.3s;
+  justify-content: center;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.pagination-button:hover:not(:disabled) {
+.page-number:hover,
+.pagination-btn:hover {
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+.page-number.active {
+  background-color: #4caf50;
+  color: white;
+  border-color: #4caf50;
+}
+
+.pagination-btn:disabled {
   background-color: #f5f5f5;
-}
-
-.pagination-button:disabled {
   color: #ccc;
   cursor: not-allowed;
+  border-color: #eee;
 }
 
-.pagination-info {
-  color: #666;
-}
-
-@media (max-width: 992px) {
-  .main-content {
-    flex-direction: column;
-  }
-
-  .filter-sidebar {
-    width: 100%;
-    margin-bottom: 20px;
-  }
-
+/* 移动端响应式样式 */
+@media (max-width: 1024px) {
   .product-list {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 768px) {
-  .product-list-page {
-    padding: 20px 0;
+  .product-page {
+    padding: 15px;
+  }
+
+  .page-header {
+    margin-bottom: 15px;
   }
 
   .page-title {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
   }
 
   .page-subtitle {
     font-size: 1rem;
   }
 
-  .product-list {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 15px;
-  }
-
-  .pagination {
+  .product-container {
     flex-direction: column;
     gap: 15px;
   }
 
-  .pagination-button {
+  .product-sidebar {
+    width: 100%;
+  }
+
+  .mobile-sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .product-list.mobile-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+
+  .search-result-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .search-result-info .clear-search-btn {
+    margin-left: 0;
+    margin-top: 10px;
+  }
+
+  .pagination {
+    margin-top: 20px;
+  }
+
+  .page-number,
+  .pagination-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .mobile-action-bar {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mobile-search-box {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .create-product-btn {
     width: 100%;
     justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-list.mobile-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+
+  .mobile-card {
+    width: 100%;
   }
 }
 </style>

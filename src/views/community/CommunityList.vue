@@ -2,13 +2,13 @@
 <template>
   <div class="container mx-auto px-4 py-8">
     <!-- 顶部操作栏 -->
-    <div class="flex justify-between items-center mb-8">
-      <h1 class="text-2xl font-bold">社区讨论</h1>
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold text-gray-800">社区讨论</h1>
       <div class="flex gap-4 items-center">
         <router-link
           v-if="isLoggedIn"
           to="/community/create"
-          class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors shadow-sm"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -18,7 +18,7 @@
         <router-link
           v-else
           to="/login"
-          class="text-blue-500 hover:text-blue-600 transition-colors"
+          class="text-green-600 hover:text-green-700 transition-colors"
         >
           登录发帖
         </router-link>
@@ -26,62 +26,76 @@
     </div>
 
     <!-- 筛选区域 -->
-    <div class="bg-white rounded-lg shadow p-6 mb-8">
-      <!-- 分类排序 -->
-      <div class="flex flex-wrap gap-4 mb-6">
-        <button
-          v-for="sortOption in sortOptions"
-          :key="sortOption.value"
-          class="px-4 py-2 rounded-full text-sm transition-colors"
-          :class="[
-            currentSort === sortOption.value
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          ]"
-          @click="selectSort(sortOption.value)"
-        >
-          {{ sortOption.label }}
-        </button>
-      </div>
-
-      <!-- 热门标签 -->
-      <div v-if="hotTags.length > 0" class="mb-6">
-        <h3 class="text-sm text-gray-500 mb-2">热门标签</h3>
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="tag in hotTags"
-            :key="tag.name"
-            class="px-3 py-1 text-xs rounded-full transition-colors"
-            :class="[
-              currentTag === tag.name
-                ? 'bg-blue-100 text-blue-600 border border-blue-300'
-                : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
-            ]"
-            @click="selectTag(tag.name === currentTag ? '' : tag.name)"
-          >
-            {{ tag.name }} <span class="text-xs text-gray-500">({{ tag.count }})</span>
-          </button>
-        </div>
-      </div>
-
+    <div class="bg-white rounded-lg border border-gray-100 mb-6 overflow-hidden">
       <!-- 搜索栏 -->
-      <div class="relative">
+      <div class="relative border-b border-gray-100">
         <input
           type="text"
           v-model="searchKeyword"
-          placeholder="搜索帖子..."
-          class="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="搜索感兴趣的内容..."
+          class="w-full px-4 py-3 pl-10 focus:outline-none focus:bg-gray-50 transition-colors"
           @input="debounceSearch"
         >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-2.5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-3.5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
         </svg>
+      </div>
+
+      <div class="flex flex-col sm:flex-row sm:items-center">
+        <!-- 分类排序 -->
+        <div class="flex border-b sm:border-b-0 sm:border-r border-gray-100">
+          <button
+            v-for="sortOption in sortOptions"
+            :key="sortOption.value"
+            class="flex-1 px-5 py-3 text-sm font-medium transition-colors relative"
+            :class="[
+              currentSort === sortOption.value
+                ? 'text-green-600'
+                : 'text-gray-500 hover:text-gray-700'
+            ]"
+            @click="selectSort(sortOption.value)"
+          >
+            {{ sortOption.label }}
+            <div v-if="currentSort === sortOption.value" class="absolute bottom-0 left-0 w-full h-0.5 bg-green-600"></div>
+          </button>
+        </div>
+
+        <!-- 热门标签 -->
+        <div v-if="hotTags.length > 0" class="p-3 flex-1 overflow-x-auto scrollbar-hide">
+          <div class="flex gap-2 flex-nowrap whitespace-nowrap">
+            <span class="text-xs text-gray-400 flex items-center mr-1">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+              标签:
+            </span>
+            <button
+              v-for="tag in hotTags.slice(0, 10)"
+              :key="tag.name"
+              class="px-2 py-1 text-xs rounded-full transition-colors"
+              :class="[
+                currentTag === tag.name
+                  ? 'bg-green-50 text-green-700 border border-green-200'
+                  : 'bg-gray-50 text-gray-600 border border-gray-100 hover:bg-gray-100'
+              ]"
+              @click="selectTag(tag.name === currentTag ? '' : tag.name)"
+            >
+              {{ tag.name }}
+            </button>
+            <button
+              v-if="hotTags.length > 10"
+              class="text-xs text-gray-500 hover:text-green-600 transition-colors px-2"
+            >
+              更多...
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- 帖子列表 -->
     <div v-if="isLoading" class="flex justify-center my-12">
-      <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+      <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-green-600"></div>
     </div>
 
     <div v-else-if="posts.length === 0" class="bg-white rounded-lg shadow p-12 text-center">
@@ -96,7 +110,7 @@
       <div
         v-for="post in posts"
         :key="post.id"
-        class="bg-white rounded-lg shadow hover:shadow-md transition-all cursor-pointer overflow-hidden"
+        class="bg-white rounded-lg shadow hover:shadow-md transition-all cursor-pointer overflow-hidden border border-gray-50"
         @click="goToDetail(post.id)"
       >
         <div class="p-6">
@@ -106,7 +120,7 @@
               <span
                 v-for="tag in post.tags.slice(0, 3)"
                 :key="tag"
-                class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs"
+                class="bg-green-50 text-green-700 px-2 py-0.5 rounded text-xs"
               >
                 {{ tag }}
               </span>
@@ -123,7 +137,7 @@
               :key="index"
               class="w-24 h-24 rounded overflow-hidden flex-shrink-0"
             >
-              <img :src="getImageUrl(image)" class="w-full h-full object-cover" alt="" />
+              <img :src="getImageUrl(image)" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" alt="" />
             </div>
             <div
               v-if="post.images.length > 3"
@@ -137,7 +151,7 @@
             <div class="flex items-center gap-4">
               <router-link
                 :to="`/user/${post.user_id}`"
-                class="flex items-center gap-2 hover:text-blue-500 transition-colors"
+                class="flex items-center gap-2 hover:text-green-600 transition-colors"
                 @click.stop
               >
                 <img
@@ -178,7 +192,7 @@
     <!-- 分页 -->
     <div v-if="total > 0" class="flex justify-center items-center gap-4 mt-8">
       <button
-        class="px-4 py-2 rounded bg-white border border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+        class="px-4 py-2 rounded bg-white border border-gray-200 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
         :disabled="currentPage === 1"
         @click="changePage(currentPage - 1)"
       >
@@ -186,7 +200,7 @@
       </button>
       <span class="text-gray-600">{{ currentPage }} / {{ totalPages }}</span>
       <button
-        class="px-4 py-2 rounded bg-white border border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+        class="px-4 py-2 rounded bg-white border border-gray-200 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
         :disabled="currentPage === totalPages"
         @click="changePage(currentPage + 1)"
       >

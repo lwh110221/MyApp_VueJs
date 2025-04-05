@@ -17,13 +17,13 @@
       <!-- 帖子内容卡片 -->
       <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
         <!-- 帖子标题和状态 -->
-        <div class="p-6 border-b">
+        <div class="p-4 sm:p-6 border-b">
           <div class="flex flex-wrap justify-between items-center gap-3">
-            <h1 class="text-2xl font-semibold text-gray-800">{{ helpStore.currentPost.title }}</h1>
+            <h1 class="text-xl sm:text-2xl font-semibold text-gray-800">{{ helpStore.currentPost.title }}</h1>
           </div>
 
-          <div class="mt-3 flex flex-wrap items-center text-sm text-gray-500">
-            <div class="mr-4">
+          <div class="mt-3 flex flex-wrap items-center text-sm text-gray-500 gap-y-2">
+            <div class="mr-4 w-full sm:w-auto">
               <router-link :to="`/user/${helpStore.currentPost.user_id}`" class="flex items-center hover:text-green-600">
                 <img :src="getUserAvatar(helpStore.currentPost.author_avatar)" class="w-8 h-8 rounded-full mr-2 object-cover" alt="用户头像" />
                 <span class="font-medium text-gray-700">{{ helpStore.currentPost.author_name }}</span>
@@ -39,13 +39,13 @@
         </div>
 
         <!-- 帖子内容 -->
-        <div class="p-6">
+        <div class="p-4 sm:p-6">
           <div class="prose max-w-none">
             <p>{{ helpStore.currentPost.content }}</p>
           </div>
 
           <!-- 图片展示 -->
-          <div v-if="helpStore.currentPost.images && helpStore.currentPost.images.length > 0" class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
+          <div v-if="helpStore.currentPost.images && helpStore.currentPost.images.length > 0" class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             <div
               v-for="(image, index) in helpStore.currentPost.images"
               :key="index"
@@ -60,9 +60,9 @@
 
       <!-- 操作按钮 -->
       <div v-if="isAuthor" class="bg-white rounded-lg shadow-md p-4 mb-6">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-wrap items-center justify-between gap-3">
           <h2 class="text-lg font-medium text-gray-700">帖子操作</h2>
-          <div class="flex space-x-2">
+          <div class="flex flex-wrap gap-2">
             <button
               v-if="helpStore.currentPost.status === 1"
               @click="updatePostStatus(2)"
@@ -106,12 +106,12 @@
         <!-- 已采纳的回答 -->
         <div v-if="helpStore.acceptedAnswer" class="mb-4">
           <div class="bg-white rounded-lg shadow-md overflow-hidden border-2 border-green-500">
-            <div class="bg-green-50 px-6 py-3 flex justify-between items-center">
-              <div class="flex items-center">
+            <div class="bg-green-50 px-3 sm:px-6 py-3 flex flex-wrap justify-between items-center gap-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <span class="bg-green-500 text-white text-xs px-2 py-1 rounded-full mr-2">已采纳</span>
                 <span class="font-medium">{{ helpStore.acceptedAnswer.author_name }}</span>
-                <span class="mx-2 text-gray-400">·</span>
-                <span class="text-sm text-gray-500">{{ formatDate(helpStore.acceptedAnswer.created_at) }}</span>
+                <span class="mx-2 text-gray-400 hidden sm:inline">·</span>
+                <span class="text-sm text-gray-500 w-full sm:w-auto">{{ formatDate(helpStore.acceptedAnswer.created_at) }}</span>
               </div>
               <div v-if="isAnswerAuthor(helpStore.acceptedAnswer)" class="flex items-center">
                 <button
@@ -123,13 +123,13 @@
               </div>
             </div>
 
-            <div class="p-6">
+            <div class="p-4 sm:p-6">
               <div class="prose max-w-none">
                 <p>{{ helpStore.acceptedAnswer.content }}</p>
               </div>
 
               <!-- 图片展示 -->
-              <div v-if="helpStore.acceptedAnswer.images && helpStore.acceptedAnswer.images.length > 0" class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
+              <div v-if="helpStore.acceptedAnswer.images && helpStore.acceptedAnswer.images.length > 0" class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                 <div
                   v-for="(image, index) in helpStore.acceptedAnswer.images"
                   :key="index"
@@ -150,8 +150,8 @@
             :key="answer.id"
             class="bg-white rounded-lg shadow-md overflow-hidden"
           >
-            <div class="px-6 py-3 bg-gray-50 flex justify-between items-center">
-              <div class="flex items-center space-x-2 mb-2">
+            <div class="px-3 sm:px-6 py-3 bg-gray-50 flex flex-wrap justify-between items-center gap-y-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <router-link :to="`/user/${answer.expert_id}`" class="flex items-center hover:text-green-600">
                   <img :src="getUserAvatar(answer.expert_avatar)" class="w-6 h-6 rounded-full mr-2 object-cover" alt="专家头像" />
                   <span class="font-medium">{{ answer.expert_name }}</span>
@@ -159,9 +159,9 @@
                 <template v-if="helpStore.currentPost.accepted_answer_id === answer.id">
                   <span class="text-green-600 bg-green-50 text-xs px-2 py-0.5 rounded-full">已采纳</span>
                 </template>
-                <span class="text-sm text-gray-500">{{ formatDate(answer.created_at) }}</span>
+                <span class="text-sm text-gray-500 w-full sm:w-auto">{{ formatDate(answer.created_at) }}</span>
               </div>
-              <div class="flex items-center space-x-4">
+              <div class="flex flex-wrap items-center gap-2">
                 <button
                   v-if="isAuthor && helpStore.currentPost.status === 1"
                   @click="acceptAnswer(answer.id)"
@@ -180,13 +180,13 @@
               </div>
             </div>
 
-            <div class="p-6">
+            <div class="p-4 sm:p-6">
               <div class="prose max-w-none">
                 <p>{{ answer.content }}</p>
               </div>
 
               <!-- 图片展示 -->
-              <div v-if="answer.images && answer.images.length > 0" class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
+              <div v-if="answer.images && answer.images.length > 0" class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                 <div
                   v-for="(image, index) in answer.images"
                   :key="index"
@@ -201,72 +201,78 @@
         </div>
       </div>
 
-      <!-- 回答表单 (只有专家可以回答) -->
-      <div v-if="isExpert && helpStore.currentPost.status === 1" class="bg-white rounded-lg shadow-md overflow-hidden">
-        <div class="px-6 py-3 bg-gray-50 border-b">
-          <h3 class="text-lg font-medium">您的专业回答</h3>
+      <!-- 回答表单 -->
+      <div v-if="canAnswer" class="bg-white rounded-lg shadow-md p-4 sm:p-6 mt-6 mb-6">
+        <h2 class="text-xl font-semibold mb-4">回答问题</h2>
+
+        <div class="mb-4">
+          <label for="answer-content" class="block text-sm font-medium text-gray-700 mb-2">内容 <span class="text-red-500">*</span></label>
+          <textarea
+            id="answer-content"
+            v-model="answerForm.content"
+            rows="5"
+            placeholder="请输入您的回答..."
+            class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            :disabled="helpStore.loading.submitAnswer"
+          ></textarea>
+          <div v-if="validationErrors.content" class="mt-1 text-red-500 text-sm">{{ validationErrors.content }}</div>
         </div>
 
-        <div class="p-6">
-          <div class="mb-4">
-            <textarea
-              v-model="answerForm.content"
-              rows="5"
-              class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="请输入您的专业回答..."
-            ></textarea>
-          </div>
-
-          <!-- 图片上传 -->
-          <div class="mb-4">
-            <div class="flex items-center mb-2">
-              <span class="mr-2">添加图片</span>
-              <input
-                ref="fileInput"
-                type="file"
-                accept="image/*"
-                multiple
-                class="hidden"
-                @change="handleFileChange"
-              />
-              <button
-                @click="$refs.fileInput.click()"
-                class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
-                :disabled="uploadingImage || answerForm.images.length >= 5"
-              >
-                <span v-if="uploadingImage">上传中...</span>
-                <span v-else>选择图片</span>
-              </button>
-              <span class="ml-2 text-xs text-gray-500">最多5张</span>
-            </div>
-
-            <!-- 图片预览 -->
-            <div v-if="answerForm.images.length > 0" class="flex flex-wrap gap-2">
-              <div
-                v-for="(image, index) in answerForm.images"
-                :key="index"
-                class="relative w-20 h-20"
-              >
-                <img :src="image" class="w-full h-full object-cover rounded" />
-                <button
-                  @click="removeImage(index)"
-                  class="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
-                >
-                  &times;
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex justify-end">
+        <!-- 图片上传和预览区域 -->
+        <div class="mb-4 relative">
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- 上传图标按钮 -->
             <button
-              @click="submitAnswer"
-              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
-              :disabled="!answerForm.content.trim() || helpStore.loading.createAnswer"
+              @click="$refs.fileInput.click()"
+              type="button"
+              :disabled="answerForm.images.length >= 5 || uploadingImage"
+              class="p-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              :class="{ 'opacity-50 cursor-not-allowed': answerForm.images.length >= 5 || uploadingImage }"
+              title="上传图片"
             >
-              {{ helpStore.loading.createAnswer ? '提交中...' : '提交回答' }}
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
             </button>
+
+            <span v-if="uploadingImage" class="text-sm text-gray-500">上传中...</span>
+            <span v-else-if="answerForm.images.length >= 5" class="text-sm text-amber-600">已达到最大上传数量</span>
+            <span v-else-if="answerForm.images.length > 0" class="text-sm text-gray-500">已上传 {{ answerForm.images.length }}/5 张图片</span>
+            <span v-else class="text-sm text-gray-500">可上传图片（最多5张）</span>
           </div>
+
+          <!-- 图片预览 -->
+          <div v-if="answerForm.images.length > 0" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2 mt-2">
+            <div v-for="(image, index) in previewImages" :key="index" class="relative">
+              <img :src="image" class="w-full h-16 object-cover rounded border" />
+              <button
+                @click="removeImage(index)"
+                class="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs -mt-1 -mr-1 shadow"
+              >
+                &times;
+              </button>
+            </div>
+          </div>
+
+          <input
+            type="file"
+            ref="fileInput"
+            multiple
+            accept="image/jpeg,image/png"
+            class="hidden"
+            @change="handleFileChange"
+          />
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            @click="submitAnswer"
+            class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded transition"
+            :disabled="helpStore.loading.submitAnswer"
+          >
+            <span v-if="helpStore.loading.submitAnswer">提交中...</span>
+            <span v-else>提交回答</span>
+          </button>
         </div>
       </div>
     </template>
@@ -363,6 +369,12 @@ export default {
       return identityStore.hasIdentity('EXPERT');
     });
 
+    // 判断是否可以回答问题
+    const canAnswer = computed(() => {
+      // 必须是专家且帖子状态为开放(1)
+      return isExpert.value && helpStore.currentPost && helpStore.currentPost.status === 1;
+    });
+
     // 判断是否是回答作者
     const isAnswerAuthor = (answer) => {
       if (!answer || !authStore.isAuthenticated) return false;
@@ -415,7 +427,17 @@ export default {
 
     // 提交回答
     const submitAnswer = async () => {
-      if (helpStore.loading.createAnswer || !answerForm.content.trim()) return;
+      if (helpStore.loading.submitAnswer || !answerForm.content.trim()) return;
+
+      // 验证表单
+      validationErrors.content = '';
+      if (!answerForm.content.trim()) {
+        validationErrors.content = '请输入回答内容';
+        return;
+      } else if (answerForm.content.length < 10) {
+        validationErrors.content = '回答内容不能少于10个字符';
+        return;
+      }
 
       try {
         await helpStore.createAnswer(postId.value, {
@@ -607,7 +629,17 @@ export default {
       nextImage,
       formatDate,
       getImageUrl,
-      getUserAvatar
+      getUserAvatar,
+      canAnswer,
+      previewImages: computed(() => answerForm.images.map(image => {
+        if (typeof image === 'string') {
+          return getImageUrl(image);
+        }
+        return URL.createObjectURL(image);
+      })),
+      validationErrors: reactive({
+        content: ''
+      })
     };
   }
 };

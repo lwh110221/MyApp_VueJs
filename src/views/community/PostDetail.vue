@@ -25,7 +25,7 @@
       <div class="flex justify-between items-center mb-6">
         <router-link
           to="/community"
-          class="flex items-center text-gray-600 hover:text-blue-500 transition-colors"
+          class="flex items-center text-gray-600 hover:text-green-600 transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd" />
@@ -35,7 +35,7 @@
         <div v-if="isCurrentUserPost" class="flex items-center gap-2">
           <router-link
             :to="`/community/edit/${post.id}`"
-            class="text-gray-600 hover:text-blue-500 transition-colors"
+            class="text-gray-600 hover:text-green-600 transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
@@ -61,7 +61,7 @@
             <div class="flex items-center text-sm text-gray-500 gap-3">
               <router-link
                 :to="`/user/${post.user_id}`"
-                class="flex items-center hover:text-blue-500 transition-colors"
+                class="flex items-center hover:text-green-600 transition-colors"
               >
                 <img
                   :src="getUserAvatar(post.author_avatar)"
@@ -81,7 +81,7 @@
                 {{ post.view_count }}
               </span>
               <button
-                class="flex items-center gap-1 hover:text-blue-500 transition-colors"
+                class="flex items-center gap-1 hover:text-green-600 transition-colors"
                 :class="{ 'text-red-500': isLiked }"
                 @click="toggleLike"
               >
@@ -104,7 +104,7 @@
             <span
               v-for="tag in post.tags"
               :key="tag"
-              class="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs"
+              class="bg-green-50 text-green-700 px-2 py-1 rounded text-xs"
             >
               {{ tag }}
             </span>
@@ -114,15 +114,15 @@
           <div class="text-gray-800 mb-6 whitespace-pre-wrap">{{ post.content }}</div>
 
           <!-- 图片显示 -->
-          <div v-if="post.images && post.images.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div v-if="post.images && post.images.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
             <div
               v-for="(image, index) in post.images"
               :key="index"
-              class="rounded overflow-hidden"
+              class="rounded overflow-hidden shadow-sm"
             >
               <img
                 :src="getImageUrl(image)"
-                class="w-full h-auto object-cover cursor-pointer"
+                class="w-full h-auto object-cover cursor-pointer transition-transform hover:scale-105 duration-300"
                 @click="showImagePreview(index)"
               />
             </div>
@@ -140,7 +140,7 @@
             <textarea
               v-model="commentContent"
               placeholder="写下你的评论..."
-              class="w-full p-3 border border-gray-200 rounded-lg resize-none min-h-[100px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full p-3 border border-gray-200 rounded-lg resize-none min-h-[100px] focus:outline-none focus:ring-2 focus:ring-green-600"
               :maxlength="1000"
             ></textarea>
             <div class="flex justify-between items-center mt-2">
@@ -148,7 +148,7 @@
                 {{ commentContent.length }}/1000
               </div>
               <div class="flex items-center gap-4">
-                <label class="flex items-center gap-2 text-gray-500 cursor-pointer">
+                <label class="flex items-center gap-2 text-gray-500 cursor-pointer hover:text-green-600 transition-colors">
                   <input
                     type="file"
                     accept="image/*"
@@ -164,7 +164,7 @@
                 <button
                   @click="submitComment"
                   :disabled="isSubmittingComment || !commentContent.trim()"
-                  class="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   {{ isSubmittingComment ? '发送中...' : '发表评论' }}
                 </button>
@@ -180,11 +180,11 @@
               >
                 <img
                   :src="image.url"
-                  class="w-full h-full object-cover rounded"
+                  class="w-full h-full object-cover rounded shadow-sm"
                 />
                 <button
                   @click="removeCommentImage(index)"
-                  class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
+                  class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow-sm"
                 >
                   &times;
                 </button>
@@ -195,7 +195,7 @@
           <div v-else class="bg-gray-50 p-4 rounded-lg text-center mb-8">
             <p class="text-gray-600">
               需要
-              <router-link to="/login" class="text-blue-500 hover:text-blue-600">
+              <router-link to="/login" class="text-green-600 hover:text-green-700">
                 登录
               </router-link>
               后才能评论
@@ -204,7 +204,7 @@
 
           <!-- 评论列表 -->
           <div v-if="isLoadingComments" class="flex justify-center py-6">
-            <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+            <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-600"></div>
           </div>
 
           <div v-else-if="comments.length === 0" class="text-center py-8 text-gray-500">
@@ -221,7 +221,7 @@
                 <div class="flex items-center space-x-3 mb-3">
                   <router-link
                     :to="`/user/${comment.user_id}`"
-                    class="flex items-center hover:text-blue-500 transition-colors"
+                    class="flex items-center hover:text-green-600 transition-colors"
                   >
                     <img
                       :src="getUserAvatar(comment.author_avatar)"
@@ -257,7 +257,7 @@
                 >
                   <img
                     :src="getImageUrl(image)"
-                    class="w-full h-full object-cover rounded cursor-pointer"
+                    class="w-full h-full object-cover rounded cursor-pointer shadow-sm hover:scale-105 transition-transform duration-300"
                     @click="showImagePreview(index, comment.images)"
                   />
                 </div>
@@ -268,7 +268,7 @@
           <!-- 评论分页 -->
           <div v-if="totalComments > pageSize" class="flex justify-center items-center gap-4 mt-8">
             <button
-              class="px-4 py-2 rounded bg-white border border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+              class="px-4 py-2 rounded bg-white border border-gray-200 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
               :disabled="currentCommentPage === 1"
               @click="changeCommentPage(currentCommentPage - 1)"
             >
@@ -276,7 +276,7 @@
             </button>
             <span class="text-gray-600">{{ currentCommentPage }} / {{ totalCommentPages }}</span>
             <button
-              class="px-4 py-2 rounded bg-white border border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+              class="px-4 py-2 rounded bg-white border border-gray-200 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
               :disabled="currentCommentPage === totalCommentPages"
               @click="changeCommentPage(currentCommentPage + 1)"
             >
@@ -286,6 +286,57 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- 图片预览组件 -->
+  <div
+    v-if="lightbox.visible"
+    class="fixed inset-0 z-50 bg-black bg-opacity-90 backdrop-blur-sm flex items-center justify-center"
+    @click="closeLightbox"
+  >
+    <!-- 关闭按钮 -->
+    <button
+      class="absolute top-4 right-4 text-white bg-gray-800 bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center z-60"
+      @click.stop="closeLightbox"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+
+    <!-- 左箭头 -->
+    <button
+      v-if="lightbox.images.length > 1"
+      class="absolute left-4 text-white bg-gray-800 bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center"
+      @click.stop="prevImage"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+
+    <!-- 图片容器 -->
+    <div class="relative max-w-[90vw] max-h-[90vh]">
+      <img
+        :src="lightbox.currentImageUrl"
+        class="max-h-[85vh] max-w-[85vw] object-contain"
+        :class="{'animate-fade-in': lightbox.isAnimating}"
+      />
+      <div class="absolute bottom-0 inset-x-0 text-center text-white pb-4">
+        {{ lightbox.currentIndex + 1 }} / {{ lightbox.images.length }}
+      </div>
+    </div>
+
+    <!-- 右箭头 -->
+    <button
+      v-if="lightbox.images.length > 1"
+      class="absolute right-4 text-white bg-gray-800 bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center"
+      @click.stop="nextImage"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+      </svg>
+    </button>
   </div>
 </template>
 
@@ -320,6 +371,15 @@ export default {
     const commentContent = ref('');
     const commentImages = ref([]);
     const isSubmittingComment = ref(false);
+
+    // Lightbox 状态
+    const lightbox = ref({
+      visible: false,
+      images: [],
+      currentIndex: 0,
+      isAnimating: false,
+      currentImageUrl: ''
+    });
 
     // 计算属性
     const isCurrentUserPost = computed(() => {
@@ -455,15 +515,53 @@ export default {
       }
     };
 
-    // 图片预览
+    // 图片预览 - 使用Lightbox
     const showImagePreview = (index, imageArray) => {
       const images = imageArray || post.value.images;
       if (!images || images.length === 0) return;
 
-      // 这里可以添加图片预览库的调用，如 v-viewer
-      console.log('预览图片', index);
-      // 也可以调用 window.open 直接在新窗口打开
-      window.open(getImageUrl(images[index]), '_blank');
+      lightbox.value.images = images;
+      lightbox.value.currentIndex = index;
+      lightbox.value.visible = true;
+      lightbox.value.currentImageUrl = getImageUrl(images[index]);
+
+      // 预加载下一张图片
+      if (images.length > 1) {
+        const nextIndex = (index + 1) % images.length;
+        const img = new Image();
+        img.src = getImageUrl(images[nextIndex]);
+      }
+    };
+
+    // 关闭Lightbox
+    const closeLightbox = () => {
+      lightbox.value.visible = false;
+    };
+
+    // 上一张图片
+    const prevImage = () => {
+      if (lightbox.value.images.length <= 1) return;
+
+      lightbox.value.isAnimating = true;
+      lightbox.value.currentIndex = (lightbox.value.currentIndex - 1 + lightbox.value.images.length) % lightbox.value.images.length;
+      lightbox.value.currentImageUrl = getImageUrl(lightbox.value.images[lightbox.value.currentIndex]);
+
+      setTimeout(() => {
+        lightbox.value.isAnimating = false;
+      }, 300);
+    };
+
+    // 下一张图片
+    const nextImage = () => {
+      if (lightbox.value.images.length <= 1) return;
+
+      lightbox.value.isAnimating = true;
+      lightbox.value.currentIndex = (lightbox.value.currentIndex + 1) % lightbox.value.images.length;
+      lightbox.value.currentImageUrl = getImageUrl(lightbox.value.images[lightbox.value.currentIndex]);
+
+      setTimeout(() => {
+        lightbox.value.isAnimating = false;
+      }, 300);
     };
 
     // 加载评论列表
@@ -635,8 +733,23 @@ export default {
       );
     };
 
+    // 键盘事件处理
+    const handleKeyPress = (e) => {
+      if (!lightbox.value.visible) return;
+
+      if (e.key === 'ArrowLeft') {
+        prevImage();
+      } else if (e.key === 'ArrowRight') {
+        nextImage();
+      } else if (e.key === 'Escape') {
+        closeLightbox();
+      }
+    };
+
     onMounted(() => {
       loadPostDetail();
+      // 添加键盘事件监听
+      window.addEventListener('keydown', handleKeyPress);
     });
 
     return {
@@ -653,6 +766,7 @@ export default {
       commentContent,
       commentImages,
       isSubmittingComment,
+      lightbox,
       authStore,
       formatDate,
       getImageUrl,
@@ -660,6 +774,9 @@ export default {
       toggleLike,
       confirmDelete,
       showImagePreview,
+      closeLightbox,
+      prevImage,
+      nextImage,
       changeCommentPage,
       handleImageUpload,
       removeCommentImage,
@@ -670,3 +787,57 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.prose {
+  max-width: 65ch;
+  color: #374151;
+}
+.prose p {
+  margin-top: 1.25em;
+  margin-bottom: 1.25em;
+}
+
+/* Lightbox动画 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: scaleIn 0.3s ease forwards;
+}
+
+/* 覆盖层淡入 */
+[v-if="lightbox.visible"] {
+  animation: fadeIn 0.3s ease;
+}
+
+/* 按钮悬停效果 */
+[v-if="lightbox.visible"] button {
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+[v-if="lightbox.visible"] button:hover {
+  background-color: rgba(75, 85, 99, 0.7);
+  transform: scale(1.05);
+}
+
+/* 图片缩放和过渡效果 */
+img {
+  transition: transform 0.3s ease;
+}
+
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+
+.shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+</style>
