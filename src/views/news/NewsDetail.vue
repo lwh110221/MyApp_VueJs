@@ -1,86 +1,142 @@
 <!-- 新闻详情页面 -->
 <template>
-  <div class="container mx-auto px-4 py-8 max-w-4xl">
-    <div class="bg-white rounded-lg shadow-md p-6">
-      <!-- 新闻头部信息 -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold mb-4">{{ article.title }}</h1>
-        <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-          <span class="bg-blue-50 text-blue-600 px-2 py-1 rounded">
-            {{ article.category_name }}
-          </span>
-          <span class="flex items-center gap-1">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
-            </svg>
-            {{ formatDate(article.publish_time) }}
-          </span>
-          <span class="flex items-center gap-1">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-              <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-            </svg>
-            {{ article.view_count }}
-          </span>
-          <span class="flex items-center gap-1">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-            </svg>
-            {{ article.author }}
-          </span>
-        </div>
-      </div>
-
-      <!-- 新闻封面图 -->
-      <div v-if="article.cover_image" class="mb-8">
-        <img
-          :src="getImageUrl(article.cover_image)"
-          :alt="article.title"
-          class="w-full rounded-lg object-cover max-h-[500px]"
-        >
-      </div>
-
-      <!-- 新闻摘要 -->
-      <div v-if="article.summary" class="mb-8 bg-gray-50 rounded-lg p-6">
-        <p class="text-gray-700 text-lg leading-relaxed">{{ article.summary }}</p>
-      </div>
-
-      <!-- 新闻正文 -->
-      <div class="prose prose-lg max-w-none" v-html="article.content"></div>
+  <div class="news-detail relative">
+    <!-- 阅读进度条 -->
+    <div class="fixed top-0 left-0 w-full h-1 bg-gray-200 z-50">
+      <div class="h-full bg-orange-500 transition-all duration-200" :style="{ width: readProgress + '%' }"></div>
     </div>
 
-    <!-- 相关新闻推荐 -->
-    <div v-if="relatedArticles.length" class="mt-12">
-      <h2 class="text-2xl font-bold mb-6">相关推荐</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div
-          v-for="related in relatedArticles"
-          :key="related.id"
-          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-transform hover:-translate-y-1 cursor-pointer overflow-hidden"
-          @click="goToDetail(related.id)"
-        >
-          <template v-if="related.cover_image">
-            <img
-              :src="getImageUrl(related.cover_image)"
-              :alt="related.title"
-              class="w-full h-48 object-cover"
-            >
-          </template>
-          <div class="p-4" :class="{ 'py-8': !related.cover_image }">
-            <h3 class="text-lg font-semibold mb-2 line-clamp-2">{{ related.title }}</h3>
-            <div class="flex items-center text-sm text-gray-500 gap-4">
-              <span>{{ related.category_name }}</span>
-              <span>{{ formatDate(related.publish_time) }}</span>
+    <!-- 调整移动端内边距 -->
+    <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-5xl">
+      <!-- 面包屑导航 - 移动端隐藏 -->
+      <nav class="hidden sm:flex mb-6 text-sm text-gray-500" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+          <li class="inline-flex items-center">
+            <router-link to="/" class="hover:text-orange-600 transition-colors">
+              <i class="fas fa-home w-4 h-4 mr-2"></i>
+              首页
+            </router-link>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <i class="fas fa-chevron-right w-6 h-6 text-gray-400"></i>
+              <router-link to="/news" class="hover:text-orange-600 transition-colors">新闻资讯</router-link>
+            </div>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <i class="fas fa-chevron-right w-6 h-6 text-gray-400"></i>
+              <span class="text-gray-400">{{ article.category_name }}</span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+
+      <!-- 移动端返回按钮 -->
+      <div class="sm:hidden mb-4">
+        <button @click="goBack" class="flex items-center text-gray-600 hover:text-orange-600 transition-colors">
+          <i class="fas fa-arrow-left mr-2"></i>
+          <span>返回</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
+        <!-- 主要内容区域 -->
+        <div class="lg:col-span-9">
+          <div class="bg-white rounded-lg shadow-md">
+            <!-- 文章头部 -->
+            <div class="p-3 sm:p-6 border-b border-gray-100">
+              <h1 class="text-xl sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4 leading-tight">{{ article.title }}</h1>
+              <div class="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
+                <span class="bg-orange-50 text-orange-600 px-2 py-1 rounded-full text-xs font-medium">
+                  {{ article.category_name }}
+                </span>
+                <span class="flex items-center gap-1">
+                  <i class="far fa-clock"></i>
+                  {{ formatDate(article.publish_time) }}
+                </span>
+                <span class="flex items-center gap-1">
+                  <i class="far fa-eye"></i>
+                  {{ article.view_count }}
+                </span>
+                <span class="flex items-center gap-1">
+                  来源：{{ article.author }}
+                </span>
+              </div>
+            </div>
+
+            <!-- 文章内容 -->
+            <div class="p-3 sm:p-6">
+              <!-- 摘要 -->
+              <div v-if="article.summary" class="mb-6 sm:mb-8">
+                <div class="bg-orange-50 border-l-4 border-orange-500 p-3 sm:p-4 rounded-r-lg">
+                  <p class="text-gray-700 text-base sm:text-lg leading-relaxed">{{ article.summary }}</p>
+                </div>
+              </div>
+
+              <!-- 正文 -->
+              <article class="prose prose-sm sm:prose-base lg:prose-lg max-w-none" v-html="article.content"></article>
+
+              <!-- 分享区域 -->
+              <div class="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-100">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm text-gray-500">分享到：</div>
+                  <div class="flex gap-3 sm:gap-4">
+                    <button v-for="platform in sharePlatforms"
+                            :key="platform.name"
+                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-100 hover:bg-orange-50 hover:text-orange-500 transition-colors flex items-center justify-center"
+                            @click="shareArticle(platform.type)">
+                      <i :class="platform.icon"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧边栏 - 移动端隐藏 -->
+        <div class="hidden lg:block lg:col-span-3">
+          <div class="sticky top-24">
+            <!-- 相关推荐 -->
+            <div class="bg-white rounded-lg shadow-md p-4">
+              <h3 class="text-lg font-bold mb-4 flex items-center">
+                <i class="fas fa-thumbs-up text-orange-500 mr-2"></i>
+                相关推荐
+              </h3>
+              <div class="space-y-4">
+                <div v-for="related in relatedArticles.slice(0, 5)"
+                     :key="related.id"
+                     class="group cursor-pointer hover:bg-orange-50 rounded-lg p-2 -mx-2 transition-colors"
+                     @click="goToDetail(related.id)">
+                  <h4 class="text-sm font-medium line-clamp-2 group-hover:text-orange-600 transition-colors">
+                    {{ related.title }}
+                  </h4>
+                  <div class="mt-1 flex items-center text-xs text-gray-500">
+                    <span>{{ formatDate(related.publish_time, true) }}</span>
+                    <span class="mx-2">·</span>
+                    <span>{{ related.view_count }} 阅读</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- 返回顶部按钮 -->
+    <button
+      v-show="showBackToTop"
+      @click="scrollToTop"
+      class="fixed bottom-6 right-4 sm:bottom-8 sm:right-8 bg-white shadow-lg rounded-full p-2 sm:p-3 text-gray-600 hover:text-orange-600 transition-colors z-50">
+      <i class="fas fa-arrow-up text-sm sm:text-base"></i>
+    </button>
   </div>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import newsService from '@/api/services/news.service';
 
@@ -91,6 +147,27 @@ export default {
     const router = useRouter();
     const article = ref({});
     const relatedArticles = ref([]);
+    const readProgress = ref(0);
+    const showBackToTop = ref(false);
+
+    // 分享平台配置
+    const sharePlatforms = [
+      {
+        name: '微博',
+        type: 'weibo',
+        icon: 'fab fa-weibo'
+      },
+      {
+        name: 'QQ',
+        type: 'qq',
+        icon: 'fab fa-qq'
+      }
+    ];
+
+    // 返回上一页
+    const goBack = () => {
+      router.back();
+    };
 
     // 处理图片路径
     const getImageUrl = (path) => {
@@ -121,13 +198,69 @@ export default {
       }
     };
 
+    // 监听滚动更新阅读进度
+    const handleScroll = () => {
+      // 更新阅读进度
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight - windowHeight;
+      const scrollTop = window.scrollY;
+      readProgress.value = (scrollTop / documentHeight) * 100;
+
+      // 显示/隐藏返回顶部按钮
+      showBackToTop.value = scrollTop > 300;
+    };
+
+    // 返回顶部
+    const scrollToTop = () => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    };
+
+    // 分享文章
+    const shareArticle = (platform) => {
+      const url = window.location.href;
+      const title = article.value.title;
+
+      switch (platform) {
+        case 'wechat':
+          // 实现微信分享逻辑
+          break;
+        case 'weibo':
+          window.open(`http://service.weibo.com/share/share.php?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`);
+          break;
+        case 'qq':
+          window.open(`http://connect.qq.com/widget/shareqq/index.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`);
+          break;
+        case 'link':
+          navigator.clipboard.writeText(url).then(() => {
+            // 显示复制成功提示
+            alert('链接已复制到剪贴板');
+          });
+          break;
+      }
+    };
+
     // 跳转到其他新闻详情
     const goToDetail = (articleId) => {
+      if (articleId === route.params.id) return;
       router.push(`/news/detail/${articleId}`);
+      // 重新获取数据
+      fetchArticleDetail();
+      fetchRelatedArticles();
+      // 滚动到顶部
+      scrollToTop();
     };
 
     // 格式化日期
-    const formatDate = (date) => {
+    const formatDate = (date, simple = false) => {
+      if (simple) {
+        return new Date(date).toLocaleDateString('zh-CN', {
+          month: 'long',
+          day: 'numeric'
+        });
+      }
       return new Date(date).toLocaleDateString('zh-CN', {
         year: 'numeric',
         month: 'long',
@@ -140,132 +273,167 @@ export default {
     onMounted(() => {
       fetchArticleDetail();
       fetchRelatedArticles();
+      window.addEventListener('scroll', handleScroll);
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('scroll', handleScroll);
     });
 
     return {
       article,
       relatedArticles,
+      readProgress,
+      showBackToTop,
+      sharePlatforms,
       goToDetail,
       formatDate,
-      getImageUrl
+      getImageUrl,
+      scrollToTop,
+      shareArticle,
+      goBack
     };
   }
 };
 </script>
 
-<style scoped>
-.news-detail-container {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 20px;
+<style>
+/* 文章内容样式优化 */
+.prose {
+  color: #374151;
 }
 
-.news-header {
-  margin-bottom: 30px;
+/* 移动端文章样式优化 */
+@media (max-width: 640px) {
+  .prose {
+    font-size: 0.9375rem;
+  }
+
+  .prose h2 {
+    font-size: 1.25em;
+    margin-top: 2em;
+    margin-bottom: 0.8em;
+  }
+
+  .prose h3 {
+    font-size: 1.125em;
+    margin-top: 1.6em;
+    margin-bottom: 0.6em;
+  }
+
+  .prose p {
+    margin-top: 1em;
+    margin-bottom: 1em;
+    line-height: 1.75;
+  }
+
+  .prose img {
+    margin: 1.5em auto;
+  }
+
+  .prose blockquote {
+    padding: 0.75em 1em;
+    margin: 1em 0;
+  }
 }
 
-.news-header h1 {
-  font-size: 2em;
-  margin-bottom: 15px;
+/* 其他样式保持不变 */
+.prose h2 {
+  color: #1f2937;
+  font-weight: 600;
+  margin-top: 2.5em;
+  margin-bottom: 1em;
+  font-size: 1.5em;
+  line-height: 1.3333333;
 }
 
-.meta {
-  display: flex;
-  gap: 20px;
-  color: #666;
-  font-size: 0.9em;
-}
-
-.cover-image {
-  margin-bottom: 30px;
-}
-
-.cover-image img {
-  width: 100%;
-  max-height: 500px;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.summary {
-  padding: 20px;
-  background: #f5f5f5;
-  border-radius: 8px;
-  margin-bottom: 30px;
-  font-size: 1.1em;
+.prose h3 {
+  color: #374151;
+  font-weight: 600;
+  margin-top: 2em;
+  margin-bottom: 0.8em;
+  font-size: 1.25em;
   line-height: 1.6;
 }
 
-.content {
+.prose p {
+  margin-top: 1.25em;
+  margin-bottom: 1.25em;
   line-height: 1.8;
-  font-size: 1.1em;
 }
 
-.related-news {
-  margin-top: 50px;
-  padding-top: 30px;
-  border-top: 1px solid #eee;
+.prose img {
+  margin: 2em auto;
+  border-radius: 0.5rem;
+  max-width: 100%;
+  height: auto;
 }
 
-.related-news h2 {
-  margin-bottom: 20px;
+.prose a {
+  color: #f97316;
+  text-decoration: none;
+  font-weight: 500;
 }
 
-.related-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+.prose a:hover {
+  text-decoration: underline;
 }
 
-.related-item {
-  cursor: pointer;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s;
+.prose blockquote {
+  font-style: normal;
+  color: #4b5563;
+  border-left-color: #f97316;
+  background-color: #fff7ed;
 }
 
-.related-item:hover {
-  transform: translateY(-5px);
+.prose code {
+  color: #f97316;
+  background-color: #fff7ed;
+  padding: 0.2em 0.4em;
+  border-radius: 0.25em;
+  font-size: 0.875em;
 }
 
-.related-item img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
+.prose pre {
+  background-color: #1f2937;
+  border-radius: 0.5rem;
+  padding: 1em;
+  overflow-x: auto;
 }
 
-.related-info {
-  padding: 15px;
+.prose pre code {
+  color: #e5e7eb;
+  background-color: transparent;
+  padding: 0;
 }
 
-.related-info h3 {
-  margin-bottom: 10px;
-  font-size: 1.1em;
+/* 过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
 }
 
-.related-info .meta {
-  font-size: 0.8em;
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
-.related-info.no-image {
-  padding-top: 30px;
-  padding-bottom: 30px;
+/* 滚动条美化 */
+.prose::-webkit-scrollbar {
+  width: 6px;
 }
 
-/* 响应式布局 */
-@media (max-width: 768px) {
-  .news-header h1 {
-    font-size: 1.5em;
-  }
+.prose::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
 
-  .meta {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
+.prose::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
 
-  .related-list {
-    grid-template-columns: 1fr;
-  }
+.prose::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 </style>

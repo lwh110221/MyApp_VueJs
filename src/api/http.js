@@ -21,6 +21,19 @@ class API {
           config.headers.Authorization = `Bearer ${token.trim()}`
         }
 
+        // 请求日志 - 调试分页问题
+        if (config.url.includes('/news/articles')) {
+          // 记录完整URL和参数用于调试
+          const fullUrl = config.baseURL + config.url +
+            (config.params ? ('?' + new URLSearchParams(config.params).toString()) : '');
+
+          console.log('→ API请求:', {
+            url: fullUrl,
+            method: config.method.toUpperCase(),
+            params: config.params
+          });
+        }
+
         return config
       },
       error => {
@@ -39,6 +52,16 @@ class API {
             new Error('Slow API Response'),
             `URL: ${response.config.url}, Duration: ${duration}ms`
           )
+        }
+
+        // 响应日志 - 调试分页问题
+        if (response.config.url.includes('/news/articles')) {
+          console.log('← 响应详情:', {
+            url: response.config.url,
+            status: response.status,
+            data: response.data,
+            duration: `${duration}ms`
+          });
         }
 
         // 处理 DELETE 请求的特殊情况
@@ -122,9 +145,18 @@ class API {
 
       // 根据请求方法处理数据
       if (method.toLowerCase() === 'get') {
-        requestConfig.params = data
+        // 直接将参数传递给axios，不要做任何处理
+        if (data !== null) {
+          requestConfig.params = data;
+        }
       } else if (data !== null) {
         requestConfig.data = data
+      }
+
+      // 重要：确保axios直接传递参数而不是嵌套
+      if (requestConfig.params && requestConfig.params.params) {
+        console.warn('检测到嵌套params:', requestConfig.params);
+        requestConfig.params = { ...requestConfig.params.params };
       }
 
       const response = await this.instance(requestConfig)
