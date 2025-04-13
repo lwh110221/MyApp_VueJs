@@ -351,6 +351,11 @@ export default {
       images: []
     });
 
+    // 表单验证错误
+    const validationErrors = reactive({
+      content: ''
+    });
+
     // 图片查看器
     const imageViewer = reactive({
       visible: false,
@@ -637,9 +642,7 @@ export default {
         }
         return URL.createObjectURL(image);
       })),
-      validationErrors: reactive({
-        content: ''
-      })
+      validationErrors
     };
   }
 };
