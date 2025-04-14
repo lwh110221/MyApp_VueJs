@@ -123,15 +123,15 @@
                 <i v-else class="fa-solid fa-cart-plus"></i>
                 {{ isInCart ? '已加入购物车' : '加入购物车' }}
               </button>
+            </div>
 
-              <div v-if="isProductOwner" class="owner-notice">
-                <i class="fa-solid fa-info-circle"></i> 您是此产品的发布者，不能购买自己的产品
-              </div>
+            <div v-if="isProductOwner" class="owner-notice">
+              <i class="fa-solid fa-info-circle"></i> 您是此产品的发布者，不能购买自己的产品
             </div>
 
             <div class="seller-info">
               <h3 class="seller-title">
-                <i class="fa-solid fa-store"></i> 卖家信息
+                <i class="fa-solid fa-store"></i> 卖家
               </h3>
               <div class="seller-name">
                 <router-link :to="`/user/${product.user_id}`" class="seller-link">
@@ -954,6 +954,29 @@ export default {
 
   .related-product-list {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  /* 添加移动端产品操作区域样式 */
+  .product-actions {
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+
+  .quantity-control {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .add-to-cart-btn {
+    width: 100%;
+    height: 46px;
+  }
+
+  .owner-notice {
+    margin-bottom: 20px;
+    text-align: center;
+    padding: 12px;
   }
 }
 </style>

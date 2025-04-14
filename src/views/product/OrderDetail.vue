@@ -146,6 +146,23 @@
               <div class="info-label">发货时间:</div>
               <div class="info-value">{{ formatDate(order.shipping_time) }}</div>
             </div>
+            <div class="info-item" v-if="order.shipping_company">
+              <div class="info-label">物流公司:</div>
+              <div class="info-value">{{ order.shipping_company }}</div>
+            </div>
+            <div class="info-item" v-if="order.tracking_number">
+              <div class="info-label">物流单号:</div>
+              <div class="info-value tracking-number">
+                {{ order.tracking_number }}
+                <button class="copy-btn" @click="copyTrackingNumber(order.tracking_number)">
+                  <i class="fa-regular fa-copy"></i>
+                </button>
+              </div>
+            </div>
+            <div class="tracking-notice" v-if="!order.shipping_company && !order.tracking_number">
+              <i class="fa-solid fa-circle-info"></i>
+              暂无物流公司和单号信息
+            </div>
           </div>
 
           <div v-else class="no-tracking">
@@ -381,6 +398,20 @@ export default {
       }
     }
 
+    // 复制物流单号
+    const copyTrackingNumber = (number) => {
+      if (!number) return;
+
+      navigator.clipboard.writeText(number)
+        .then(() => {
+          messageService.success('物流单号已复制到剪贴板');
+        })
+        .catch(err => {
+          console.error('复制失败:', err);
+          messageService.error('复制失败，请手动复制');
+        });
+    }
+
     // 组件挂载时
     onMounted(() => {
       fetchOrderDetail()
@@ -397,6 +428,7 @@ export default {
       getPaymentMethodText,
       getItemsTotal,
       formatDate,
+      copyTrackingNumber,
       goBack,
       handleCancelOrder,
       handleConfirmReceived,
@@ -697,6 +729,39 @@ export default {
 .summary-item.total .summary-value {
   color: #f44336;
   font-size: 1.2rem;
+}
+
+.tracking-info {
+  padding: 10px;
+}
+
+.tracking-number {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.copy-btn {
+  background: none;
+  border: none;
+  color: #4caf50;
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  background-color: #f1f8e9;
+}
+
+.tracking-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ff9800;
+  margin-top: 15px;
+  font-size: 0.9rem;
 }
 
 .no-tracking {

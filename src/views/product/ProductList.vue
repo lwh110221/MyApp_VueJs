@@ -11,6 +11,14 @@
       <button class="create-product-btn" v-if="isUserFarmer" @click="goToCreateProduct">
         <i class="fa-solid fa-plus"></i> 发布农产品
       </button>
+      <div class="farmer-links" v-if="isUserFarmer">
+        <button class="farmer-link-btn" @click="goToSellerOrders">
+          <i class="fa-solid fa-receipt"></i> 售出订单
+        </button>
+        <button class="farmer-link-btn" @click="goToMyProducts">
+          <i class="fa-solid fa-leaf"></i> 我的农产品
+        </button>
+      </div>
       <div class="mobile-search-box">
         <input
           type="text"
@@ -39,9 +47,22 @@
       <div class="product-list-container">
         <!-- 桌面版操作栏 -->
         <div class="action-bar" v-if="!isMobileView">
-          <button class="create-product-btn" v-if="isUserFarmer" @click="goToCreateProduct">
-            <i class="fa-solid fa-plus"></i> 发布农产品
-          </button>
+          <div class="action-buttons">
+            <div class="farmer-buttons" v-if="isUserFarmer">
+              <button class="farmer-link-btn" @click="goToSellerOrders">
+                <i class="fa-solid fa-receipt"></i> 售出订单
+              </button>
+              <button class="farmer-link-btn" @click="goToMyProducts">
+                <i class="fa-solid fa-leaf"></i> 我的农产品
+              </button>
+              <button class="create-product-btn" @click="goToCreateProduct">
+                <i class="fa-solid fa-plus"></i> 发布农产品
+              </button>
+            </div>
+            <button v-else-if="isUserFarmer" class="create-product-btn" @click="goToCreateProduct">
+              <i class="fa-solid fa-plus"></i> 发布农产品
+            </button>
+          </div>
         </div>
 
         <!-- 加载状态 -->
@@ -315,7 +336,17 @@ export default {
 
     // 跳转到创建产品页面
     const goToCreateProduct = () => {
-      router.push('/product/create')
+      router.push('/products/create')
+    }
+
+    // 跳转到我的农产品页面
+    const goToMyProducts = () => {
+      router.push('/my-products')
+    }
+
+    // 跳转到售出订单页面
+    const goToSellerOrders = () => {
+      router.push('/seller/orders')
     }
 
     // 从URL加载过滤条件
@@ -404,6 +435,8 @@ export default {
       clearSearch,
       resetFilters,
       goToCreateProduct,
+      goToMyProducts,
+      goToSellerOrders,
       applyMobileSearch
     }
   }
@@ -484,6 +517,42 @@ export default {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 20px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.farmer-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.farmer-link-btn {
+  padding: 10px 16px;
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.farmer-link-btn:hover {
+  background-color: #e0e0e0;
+  border-color: #ccc;
+}
+
+.farmer-links {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  width: 100%;
 }
 
 .create-product-btn {
@@ -702,9 +771,22 @@ export default {
     max-width: 100%;
   }
 
-  .create-product-btn {
+  .create-product-btn,
+  .farmer-link-btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .farmer-links {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .farmer-links .farmer-link-btn {
+    flex: 1;
+    font-size: 0.9rem;
+    padding: 8px 12px;
   }
 }
 
