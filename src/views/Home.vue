@@ -194,6 +194,7 @@
                   <div class="flex flex-col items-center">
                     <div class="w-full h-36 mb-3 overflow-hidden rounded product-image-container">
                       <img :src="getProductImage(product)" class="w-full h-full object-cover transition hover:scale-105" alt="产品图片" />
+                      <div class="product-name-overlay">{{ product.title }}</div>
                     </div>
                     <div class="product-info-container w-full">
                       <h3 class="text-base font-bold text-gray-800 mb-2 product-title-text text-center">{{ product.name }}</h3>
@@ -337,7 +338,17 @@ export default {
           sort_order: 'desc'
         };
         await productStore.fetchProducts(params);
-        featuredProducts.value = productStore.products.slice(0, 4);
+
+        // 确保数据中包含name字段
+        featuredProducts.value = productStore.products.slice(0, 4).map(product => {
+          // 如果产品名称为空，则添加默认名称
+          if (!product.title || product.title.trim() === '') {
+            product.title = '云南特色农产品';
+          }
+          return product;
+        });
+
+        console.log('加载的产品数据:', featuredProducts.value);
       } catch (error) {
         console.error('获取产品失败:', error);
         featuredProducts.value = []; // 确保出错时使用空数组
@@ -693,7 +704,7 @@ export default {
   right: 20px;
 }
 
-/* 产品名称样式强化 - 确保产品名称更加明显 */
+/* 产品名称样式强化 - 增强名称可见度 */
 .product-info-container {
   background-color: #f8f9fa;
   padding: 10px;
@@ -701,29 +712,50 @@ export default {
   text-align: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  margin-top: -15px; /* 让信息容器上移，与图片部分重叠 */
+  margin-top: -15px;
   position: relative;
-  width: 90%; /* 宽度略小于图片 */
+  width: 90%;
   margin-left: auto;
   margin-right: auto;
+  z-index: 2;
+}
+
+.product-title-text {
+  color: #2c3e50;
+  font-weight: 700;
+  font-size: 1.05rem;
+  transition: color 0.3s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  display: block;
+  z-index: 3;
+}
+
+/* 添加图片上的产品名称覆盖层 */
+.product-name-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 6px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-weight: 600;
+  text-align: center;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  z-index: 1;
+  transition: all 0.3s ease;
 }
 
 .product-item:hover .product-info-container {
   background-color: #e9f5e9;
   transform: translateY(-5px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.product-title-text {
-  color: #2c3e50;
-  font-weight: 700; /* 加粗 */
-  font-size: 1.05rem; /* 稍微增大 */
-  transition: color 0.3s ease;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap; /* 确保单行显示 */
-  max-width: 100%;
-  display: block;
 }
 
 .product-item:hover .product-title-text {
