@@ -1,14 +1,14 @@
 <template>
   <div class="min-h-screen page-bg">
     <!-- 顶部横幅区域轮播 -->
-    <div class="bg-highland-gradient from-highland-700 to-highland-600 py-12 md:py-20 text-white relative overflow-hidden">
+    <div class="bg-highland-gradient from-highland-500 to-highland-600 py-24 md:py-48 text-white relative overflow-hidden">
       <!-- 轮播背景 -->
       <div class="carousel-container">
         <div class="carousel-slides" :style="{transform: `translateX(-${currentSlide * 100}%)`}">
           <!-- 轮播项 (可以自己替换图片) -->
-          <div class="carousel-slide" style="background-image: url('/path/to/bg1.jpg')"></div>
-          <div class="carousel-slide" style="background-image: url('/path/to/bg2.jpg')"></div>
-          <div class="carousel-slide" style="background-image: url('/path/to/bg3.jpg')"></div>
+          <div class="carousel-slide" style="background-image: url('/images/banner/bg1.jpg')"></div>
+          <div class="carousel-slide" style="background-image: url('/images/banner/bg2.jpg')"></div>
+          <div class="carousel-slide" style="background-image: url('/images/banner/bg3.jpg')"></div>
         </div>
 
         <!-- 轮播指示器 -->
@@ -52,10 +52,10 @@
           </div>
           <div class="md:w-1/2 flex justify-center">
             <div class="relative w-full max-w-md">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-full w-full text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <!-- <svg xmlns="http://www.w3.org/2000/svg" class="h-full w-full text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
-              <div class="absolute inset-0 flex items-center justify-center">
+              </svg> -->
+              <!-- <div class="absolute inset-0 flex items-center justify-center">
                 <div class="text-center">
                   <span class="block text-2xl font-bold mb-2">欢迎您</span>
                   <span v-if="isLoggedIn" class="block text-xl">{{ username }}</span>
@@ -65,7 +65,7 @@
                     <router-link to="/register" class="text-white hover:text-highland-100 underline">注册</router-link>
                   </div>
                 </div>
-              </div>
+              </div> -->
             </div>
           </div>
         </div>

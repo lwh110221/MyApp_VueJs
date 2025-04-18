@@ -106,7 +106,7 @@
           <div class="order-items">
             <div v-for="item in order.items" :key="item.id" class="order-item">
               <div class="item-image">
-                <img :src="item.product_image || '/images/default-product.png'" :alt="item.product_title" />
+                <img :src="getImageUrl(item.product_image)" :alt="item.product_title" />
               </div>
               <div class="item-details">
                 <div class="item-name">{{ item.product_title }}</div>
@@ -412,6 +412,12 @@ export default {
         });
     }
 
+    // 获取图片URL
+    const getImageUrl = (imagePath) => {
+      if (!imagePath) return '/images/default-product.png'
+      return imagePath
+    }
+
     // 组件挂载时
     onMounted(() => {
       fetchOrderDetail()
@@ -433,7 +439,8 @@ export default {
       handleCancelOrder,
       handleConfirmReceived,
       handlePayOrder,
-      confirmPayment
+      confirmPayment,
+      getImageUrl
     }
   }
 }

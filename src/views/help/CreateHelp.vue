@@ -99,12 +99,17 @@
             </div>
 
             <!-- 图片预览 -->
-            <div v-if="formData.images.length > 0" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2 mt-2">
-              <div v-for="(image, index) in previewImages" :key="index" class="relative">
-                <img :src="image" class="w-full h-16 object-cover rounded border" />
+            <div v-if="formData.images.length > 0" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4 mt-4">
+              <div v-for="(image, index) in previewImages" :key="index" class="relative aspect-square">
+                <img
+                  :src="image"
+                  class="w-full h-full object-cover rounded-lg border border-gray-200 shadow-sm"
+                  alt="预览图片"
+                />
                 <button
                   @click="removeImage(index)"
-                  class="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs -mt-1 -mr-1 shadow"
+                  class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm shadow-md hover:bg-red-600 transition-colors"
+                  title="删除图片"
                 >
                   &times;
                 </button>
@@ -325,10 +330,20 @@ export default {
       router,
       previewImages: computed(() => {
         return formData.images.map(image => {
+          // 如果是 File 对象
+          if (image instanceof File) {
+            return URL.createObjectURL(image);
+          }
+          // 如果是字符串（URL）
           if (typeof image === 'string') {
             return getImageUrl(image);
           }
-          return URL.createObjectURL(image);
+          // 如果是对象且包含 url 属性
+          if (typeof image === 'object' && image?.url) {
+            return getImageUrl(image.url);
+          }
+          // 默认返回空字符串，避免渲染错误
+          return '';
         });
       })
     };

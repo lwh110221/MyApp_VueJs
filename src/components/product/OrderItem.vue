@@ -188,9 +188,20 @@ export default {
 
     // 获取商品图片
     const getItemImage = (item) => {
-      if (!item) return '';
-      return item.product_image || '/images/default-product.png';
+      if (!item) return '/images/default-product.png';
+      return getImageUrl(item.product_image);
     }
+
+    // 获取图片完整URL
+    const getImageUrl = (path) => {
+      if (!path) return '/images/default-product.png';
+      if (typeof path === 'object' && path.url) {
+        path = path.url;
+      }
+      if (typeof path === 'string' && path.startsWith('http')) return path;
+      const baseUrl = import.meta.env.VITE_BASE_API_URL?.replace('/api', '') || process.env.VUE_APP_API_BASE_URL || 'http://localhost:3000';
+      return `${baseUrl}${path}`;
+    };
 
     // 获取商品名称
     const getItemName = (item) => {

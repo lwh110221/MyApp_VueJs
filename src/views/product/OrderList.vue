@@ -225,6 +225,17 @@ export default {
       fetchOrders()
     })
 
+    // 获取图片完整URL
+    const getImageUrl = (path) => {
+      if (!path) return '/images/default-product.png';
+      if (typeof path === 'object' && path.url) {
+        path = path.url;
+      }
+      if (typeof path === 'string' && path.startsWith('http')) return path;
+      const baseUrl = import.meta.env.VITE_BASE_API_URL?.replace('/api', '') || process.env.VUE_APP_API_BASE_URL || 'http://localhost:3000';
+      return `${baseUrl}${path}`;
+    };
+
     // 组件挂载时
     onMounted(() => {
       loadFiltersFromQuery()
@@ -240,7 +251,8 @@ export default {
       activeStatus,
       getStatusText,
       filterByStatus,
-      changePage
+      changePage,
+      getImageUrl
     }
   }
 }
