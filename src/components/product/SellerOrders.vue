@@ -34,7 +34,7 @@
         <!-- 订单商品 -->
         <div class="space-y-3">
           <div v-for="item in order.items" :key="item.id" class="flex items-center space-x-4">
-            <img :src="item.product_image" :alt="item.product_title"
+            <img :src="getProductImage(item)" :alt="item.product_title"
               class="w-16 h-16 object-cover rounded-md">
             <div class="flex-1">
               <p class="font-medium text-gray-800">{{ item.product_title }}</p>
@@ -140,12 +140,14 @@
 <script>
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useProductStore } from '@/stores'
 import axios from 'axios'
 
 export default {
   name: 'SellerOrders',
   setup() {
     const router = useRouter()
+    const productStore = useProductStore()
     const orders = ref([])
     const currentStatus = ref('')
     const currentPage = ref(1)
@@ -156,6 +158,7 @@ export default {
       tracking_number: '',
       shipping_company: ''
     })
+    const productCache = ref({}) // 用于缓存产品信息
 
     // 获取订单列表
     const fetchOrders = async () => {
@@ -178,6 +181,9 @@ export default {
         if (response.data.code === 200) {
           orders.value = response.data.data.orders
           totalPages.value = response.data.data.totalPages
+
+          // 获取产品图片信息
+          await loadProductImages();
         }
       } catch (error) {
         console.error('获取订单列表失败:', error)
@@ -238,6 +244,70 @@ export default {
       })
     }
 
+    // 获取订单列表后加载产品信息
+    const loadProductImages = async () => {
+      if (!orders.value || orders.value.length === 0) return;
+
+      const productIds = [];
+
+      // 收集所有订单中的产品ID
+      orders.value.forEach(order => {
+        if (order.items && order.items.length > 0) {
+          order.items.forEach(item => {
+            if (item.product_id && !productCache.value[item.product_id]) {
+              productIds.push(item.product_id);
+            }
+          });
+        }
+      });
+
+      // 批量获取产品信息
+      if (productIds.length > 0) {
+        try {
+          for (const productId of productIds) {
+            const product = await productStore.fetchProductById(productId);
+            if (product) {
+              productCache.value[productId] = product;
+            }
+          }
+        } catch (error) {
+          console.error('获取产品信息失败:', error);
+        }
+      }
+    }
+
+    // 获取产品图片
+    const getProductImage = (item) => {
+      if (!item) return '/images/default-product.png';
+
+      // 如果有 product_image 且不为空，直接使用
+      if (item.product_image) {
+        return getImageUrl(item.product_image);
+      }
+
+      // 从缓存中获取产品信息
+      if (item.product_id && productCache.value[item.product_id]) {
+        const cachedProduct = productCache.value[item.product_id];
+        if (cachedProduct.images) {
+          return productStore.getProductImage(cachedProduct);
+        }
+      }
+
+      // 都没有则返回默认图片
+      return '/images/default-product.png';
+    }
+
+    // 处理图片URL
+    const getImageUrl = (path) => {
+      if (!path) return '/images/default-product.png';
+      if (typeof path === 'object' && path.url) {
+        path = path.url;
+      }
+      if (typeof path === 'string' && path.startsWith('http')) return path;
+      const baseUrl = import.meta.env.VITE_BASE_API_URL?.replace('/api', '') || process.env.VUE_APP_API_BASE_URL || 'http://localhost:3000';
+      return `${baseUrl}${path}`;
+    };
+
     // 监听筛选条件变化
     watch([currentStatus, currentPage], () => {
       fetchOrders()
@@ -254,10 +324,12 @@ export default {
       totalPages,
       showShipModal,
       shipForm,
+      formatDate,
+      fetchOrders,
       viewOrderDetail,
       handleShip,
       confirmShip,
-      formatDate
+      getProductImage
     }
   }
 }
