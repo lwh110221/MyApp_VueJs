@@ -71,6 +71,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useOrderStore } from '@/stores'
+import { useProductStore } from '@/stores'
 import { messageService } from '@/api'
 import OrderItem from '@/components/product/OrderItem.vue'
 
@@ -85,6 +86,7 @@ export default {
     const route = useRoute()
     const router = useRouter()
     const orderStore = useOrderStore()
+    const productStore = useProductStore()
 
     const loading = ref(true)
     const orders = ref([])
@@ -236,6 +238,11 @@ export default {
       return `${baseUrl}${path}`;
     };
 
+    // 获取产品图片
+    const getProductImage = (product) => {
+      return productStore.getProductImage(product);
+    };
+
     // 组件挂载时
     onMounted(() => {
       loadFiltersFromQuery()
@@ -252,7 +259,8 @@ export default {
       getStatusText,
       filterByStatus,
       changePage,
-      getImageUrl
+      getImageUrl,
+      getProductImage
     }
   }
 }

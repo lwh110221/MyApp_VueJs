@@ -79,9 +79,9 @@
 </template>
 
 <script>
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useOrderStore } from '@/stores'
+import { useOrderStore, useProductStore } from '@/stores'
 
 export default {
   name: 'OrderItem',
@@ -96,6 +96,33 @@ export default {
   setup(props) {
     const router = useRouter()
     const orderStore = useOrderStore()
+    const productStore = useProductStore()
+
+    // 用于存储获取到的产品信息
+    const productCache = ref({});
+
+    // 在组件挂载时，获取订单中所有产品的信息
+    onMounted(async () => {
+      if (props.order && props.order.items && props.order.items.length > 0) {
+        const productIds = props.order.items
+          .map(item => item.product_id)
+          .filter(id => id && !productCache.value[id]);
+
+        // 批量获取产品信息
+        if (productIds.length > 0) {
+          try {
+            for (const productId of productIds) {
+              const product = await productStore.fetchProductById(productId);
+              if (product) {
+                productCache.value[productId] = product;
+              }
+            }
+          } catch (error) {
+            console.error('获取产品信息失败:', error);
+          }
+        }
+      }
+    });
 
     // 最大显示商品数量
     const MAX_DISPLAY_ITEMS = 2
@@ -189,7 +216,22 @@ export default {
     // 获取商品图片
     const getItemImage = (item) => {
       if (!item) return '/images/default-product.png';
-      return getImageUrl(item.product_image);
+
+      // 如果有 product_image 且不为空，直接使用
+      if (item.product_image) {
+        return getImageUrl(item.product_image);
+      }
+
+      // 尝试从缓存中获取产品信息
+      if (item.product_id && productCache.value[item.product_id]) {
+        const cachedProduct = productCache.value[item.product_id];
+        if (cachedProduct.images) {
+          return productStore.getProductImage(cachedProduct);
+        }
+      }
+
+      // 如果缓存中没有，则返回默认图片
+      return '/images/default-product.png';
     }
 
     // 获取图片完整URL
@@ -221,7 +263,8 @@ export default {
       handleConfirmReceived,
       handlePayOrder,
       getItemImage,
-      getItemName
+      getItemName,
+      getImageUrl
     }
   }
 }
