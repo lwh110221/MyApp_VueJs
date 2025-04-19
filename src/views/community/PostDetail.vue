@@ -137,9 +137,18 @@
 
           <!-- 评论输入框 -->
           <div v-if="authStore.isLoggedIn" class="mb-8">
+            <div class="flex items-center mb-2" v-if="replyingTo">
+              <span class="text-sm text-gray-600">回复给: <span class="text-blue-500">{{ replyingTo.author_name }}</span></span>
+              <button
+                @click="cancelReply"
+                class="ml-2 text-sm text-red-500 hover:text-red-600"
+              >
+                取消回复
+              </button>
+            </div>
             <textarea
               v-model="commentContent"
-              placeholder="写下你的评论..."
+              :placeholder="replyingTo ? `回复 ${replyingTo.author_name}...` : '写下你的评论...'"
               class="w-full p-3 border border-gray-200 rounded-lg resize-none min-h-[100px] focus:outline-none focus:ring-2 focus:ring-green-600"
               :maxlength="1000"
             ></textarea>
@@ -212,11 +221,13 @@
           </div>
 
           <div v-else class="space-y-6">
+            <!-- 只渲染顶级评论，子评论会在各自的父评论下显示 -->
             <div
-              v-for="comment in comments"
+              v-for="comment in topLevelComments"
               :key="comment.id"
               class="border-b border-gray-100 pb-6 last:border-0"
             >
+              <!-- 母评论内容 -->
               <div class="flex justify-between items-start">
                 <div class="flex items-center space-x-3 mb-3">
                   <router-link
@@ -241,6 +252,13 @@
                   >
                     删除
                   </button>
+                  <button
+                    v-if="authStore.isLoggedIn"
+                    @click="replyToComment(comment)"
+                    class="text-blue-500 hover:text-blue-600 transition-colors text-sm"
+                  >
+                    回复
+                  </button>
                 </div>
               </div>
 
@@ -249,7 +267,7 @@
               </div>
 
               <!-- 评论图片 -->
-              <div v-if="comment.images && comment.images.length > 0" class="flex gap-2 mt-2 overflow-x-auto">
+              <div v-if="comment.images && comment.images.length > 0" class="flex gap-2 mt-2 overflow-x-auto mb-4">
                 <div
                   v-for="(image, index) in comment.images"
                   :key="index"
@@ -260,6 +278,69 @@
                     class="w-full h-full object-cover rounded cursor-pointer shadow-sm hover:scale-105 transition-transform duration-300"
                     @click="showImagePreview(index, comment.images)"
                   />
+                </div>
+              </div>
+
+              <!-- 子评论区域 -->
+              <div v-if="getChildComments(comment.id).length > 0" class="mt-4 pl-6 border-l-2 border-gray-100 space-y-4">
+                <div
+                  v-for="childComment in getChildComments(comment.id)"
+                  :key="childComment.id"
+                  class="pt-3"
+                >
+                  <div class="flex justify-between items-start">
+                    <div class="flex items-center space-x-3 mb-2">
+                      <router-link
+                        :to="`/user/${childComment.user_id}`"
+                        class="flex items-center hover:text-green-600 transition-colors"
+                      >
+                        <img
+                          :src="getUserAvatar(childComment.author_avatar)"
+                          class="w-5 h-5 rounded-full mr-2 object-cover"
+                          alt="评论者头像"
+                        />
+                        <div class="font-medium text-sm">{{ childComment.author_name }}</div>
+                      </router-link>
+                      <div class="text-xs text-gray-500">{{ formatDate(childComment.created_at) }}</div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                      <button
+                        v-if="canDelete(childComment)"
+                        @click="deleteComment(childComment.id)"
+                        class="text-red-500 hover:text-red-600 transition-colors text-xs"
+                      >
+                        删除
+                      </button>
+                      <button
+                        v-if="authStore.isLoggedIn"
+                        @click="replyToComment(childComment)"
+                        class="text-blue-500 hover:text-blue-600 transition-colors text-xs"
+                      >
+                        回复
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="text-gray-800 text-sm">
+                    <span class="text-blue-500">@{{ getParentCommentAuthor(childComment.parent_id) }} </span>
+                    {{ childComment.content }}
+                  </div>
+
+                  <!-- 子评论图片 -->
+                  <div v-if="childComment.images && childComment.images.length > 0" class="flex gap-2 mt-2 overflow-x-auto">
+                    <div
+                      v-for="(image, index) in childComment.images"
+                      :key="index"
+                      class="w-16 h-16 flex-none"
+                    >
+                      <img
+                        :src="getImageUrl(image)"
+                        class="w-full h-full object-cover rounded cursor-pointer shadow-sm hover:scale-105 transition-transform duration-300"
+                        @click="showImagePreview(index, childComment.images)"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -371,6 +452,7 @@ export default {
     const commentContent = ref('');
     const commentImages = ref([]);
     const isSubmittingComment = ref(false);
+    const replyingTo = ref(null); // 用于跟踪正在回复的评论
 
     // Lightbox 状态
     const lightbox = ref({
@@ -388,6 +470,62 @@ export default {
     });
 
     const totalCommentPages = computed(() => Math.ceil(totalComments.value / pageSize.value));
+
+    // 计算属性：筛选出顶级评论（没有父评论的评论）
+    const topLevelComments = computed(() => {
+      return comments.value.filter(comment => !comment.parent_id);
+    });
+
+    // 获取某个评论的所有子评论
+    const getChildComments = (parentId) => {
+      // 直接子评论
+      const directChildren = comments.value.filter(comment => comment.parent_id === parentId);
+
+      // 需要找出所有间接子评论，无论嵌套多深
+      const getAllChildComments = (rootParentId) => {
+        // 先找出直接子评论
+        const directDecendants = comments.value.filter(comment => comment.parent_id === rootParentId);
+
+        // 已处理的子评论ID集合，用于避免循环引用
+        const processedIds = new Set();
+        // 所有应该显示在该顶级评论下的子评论
+        const allDecendants = [];
+
+        // 递归处理所有子评论
+        const processChildren = (commentId) => {
+          // 如果已经处理过这个评论，跳过以避免循环
+          if (processedIds.has(commentId)) return;
+
+          // 标记为已处理
+          processedIds.add(commentId);
+
+          // 找到这个评论的直接子评论
+          const children = comments.value.filter(comment => comment.parent_id === commentId);
+
+          // 如果这些子评论不是顶级评论的直接子评论，则添加到结果中
+          children.forEach(child => {
+            if (child.parent_id !== rootParentId) {
+              allDecendants.push(child);
+            }
+            // 继续递归处理这个子评论的子评论
+            processChildren(child.id);
+          });
+        };
+
+        // 对每个直接子评论，处理它的所有子评论
+        directDecendants.forEach(child => {
+          processChildren(child.id);
+        });
+
+        return [...directDecendants, ...allDecendants];
+      };
+
+      // 获取所有嵌套子评论
+      const allChildren = getAllChildComments(parentId);
+
+      // 按时间顺序排序
+      return allChildren.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    };
 
     // 格式化日期
     const formatDate = (dateString) => {
@@ -575,7 +713,24 @@ export default {
 
         if (response && response.code === 200 && response.data) {
           console.log("评论列表数据:", response.data);
-          comments.value = response.data.items;
+          // 处理评论数据
+          const processedComments = response.data.items.map(comment => {
+            try {
+              // 解析图片数据
+              comment.images = typeof comment.images === 'string' ?
+                JSON.parse(comment.images) :
+                (Array.isArray(comment.images) ? comment.images : []);
+
+              return comment;
+            } catch (err) {
+              console.error('解析评论图片数据错误:', err);
+              comment.images = [];
+              return comment;
+            }
+          });
+
+          // 将评论按时间顺序排序
+          comments.value = processedComments.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
           totalComments.value = response.data.pagination.total;
         }
       } catch (error) {
@@ -637,6 +792,20 @@ export default {
       commentImages.value.splice(index, 1);
     };
 
+    // 回复特定评论
+    const replyToComment = (comment) => {
+      replyingTo.value = comment;
+      // 将滚动位置定位到评论输入框
+      setTimeout(() => {
+        document.querySelector('textarea[v-model="commentContent"]')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    };
+
+    // 取消回复
+    const cancelReply = () => {
+      replyingTo.value = null;
+    };
+
     // 提交评论
     const submitComment = async () => {
       if (!commentContent.value.trim()) {
@@ -669,7 +838,8 @@ export default {
         // 发表评论
         const commentData = {
           content: commentContent.value,
-          images: uploadedImages
+          images: uploadedImages,
+          parent_id: replyingTo.value ? replyingTo.value.id : null // 使用 parent_id 而不是 reply_to
         };
 
         console.log("准备提交的评论数据:", commentData);
@@ -679,11 +849,12 @@ export default {
         console.log("评论提交响应:", response);
 
         if (response && response.code === 200) {
-          toast.success('评论发表成功');
+          toast.success(replyingTo.value ? '回复发表成功' : '评论发表成功');
 
           // 重置评论表单
           commentContent.value = '';
           commentImages.value = [];
+          replyingTo.value = null; // 重置回复状态
 
           // 更新评论计数
           if (post.value) {
@@ -746,6 +917,25 @@ export default {
       }
     };
 
+    // 获取父评论作者名称
+    const getParentCommentAuthor = (parentId) => {
+      if (!parentId) return '';
+      const parentComment = comments.value.find(c => c.id === parentId);
+
+      // 如果父评论在评论列表中找到了
+      if (parentComment) {
+        // 如果父评论本身就是顶级评论，直接返回作者名
+        if (!parentComment.parent_id) {
+          return parentComment.author_name;
+        }
+
+        // 如果父评论是子评论（即这是孙评论），返回实际回复的那条评论的作者名
+        return parentComment.author_name;
+      }
+
+      return '';
+    };
+
     onMounted(() => {
       loadPostDetail();
       // 添加键盘事件监听
@@ -758,6 +948,7 @@ export default {
       isLiked,
       isCurrentUserPost,
       comments,
+      topLevelComments,
       isLoadingComments,
       currentCommentPage,
       pageSize,
@@ -768,6 +959,7 @@ export default {
       isSubmittingComment,
       lightbox,
       authStore,
+      replyingTo,
       formatDate,
       getImageUrl,
       getUserAvatar,
@@ -782,7 +974,11 @@ export default {
       removeCommentImage,
       submitComment,
       deleteComment,
-      canDelete
+      canDelete,
+      replyToComment,
+      cancelReply,
+      getParentCommentAuthor,
+      getChildComments
     };
   }
 }
