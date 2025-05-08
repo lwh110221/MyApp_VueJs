@@ -62,27 +62,6 @@
         </div>
       </div>
 
-      <!-- 支付方式 -->
-      <div class="form-section">
-        <h3 class="section-title">支付方式</h3>
-
-        <div class="payment-options">
-          <div
-            v-for="option in paymentOptions"
-            :key="option.value"
-            class="payment-option"
-            :class="{ 'selected': form.payment_method === option.value }"
-            @click="selectPaymentMethod(option.value)"
-          >
-            <div class="payment-option-inner">
-              <i :class="option.icon"></i>
-              <span>{{ option.label }}</span>
-            </div>
-          </div>
-        </div>
-        <div v-if="errors.payment_method" class="error-message">{{ errors.payment_method }}</div>
-      </div>
-
       <!-- 订单商品 -->
       <div class="form-section">
         <h3 class="section-title">订单商品</h3>
